@@ -1,0 +1,9 @@
+[log]
+level = "info"
+
+[devices]
+list = [
+    "/dev/nvme0n1",
+    "/dev/nvme1n1",
+    "/dev/nvme2n1",
+]
