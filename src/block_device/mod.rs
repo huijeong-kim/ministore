@@ -4,6 +4,7 @@ use self::device_info::DeviceInfo;
 
 mod device_info;
 mod simple_fake_device;
+mod simple_async_fake_device;
 
 pub const BLOCK_SIZE: usize = 4096;
 pub const UNMAP_BLOCK: DataBlock = DataBlock([0xF; BLOCK_SIZE]);
