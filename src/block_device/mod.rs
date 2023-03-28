@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use self::device_info::DeviceInfo;
+use self::{device_info::DeviceInfo, simple_fake_device::SimpleFakeDevice};
 
 mod device_info;
-mod simple_fake_device;
 mod simple_async_fake_device;
+pub mod simple_fake_device;
 
 pub const BLOCK_SIZE: usize = 4096;
 pub const UNMAP_BLOCK: DataBlock = DataBlock([0xF; BLOCK_SIZE]);
@@ -57,4 +57,21 @@ pub trait BlockDevice {
     fn info(&self) -> &DeviceInfo;
     fn write(&mut self, lba: u64, num_blocks: u64, buffer: Vec<DataBlock>) -> Result<(), String>;
     fn read(&self, lba: u64, num_blocks: u64) -> Result<Vec<DataBlock>, String>;
+}
+
+pub fn create_fake_devices_from_list(
+    device_config: &crate::config::DeviceConfig,
+) -> Result<Vec<SimpleFakeDevice>, String> {
+    let mut devices = Vec::new();
+    let num_devices = device_config.list.len();
+
+    for idx in 0..num_devices {
+        let name = device_config.list[idx].clone();
+        let size = crate::utils::humansize_to_integer(&device_config.device_size[idx])?;
+
+        let device = SimpleFakeDevice::new(name, size)?;
+        devices.push(device)
+    }
+
+    Ok(devices)
 }

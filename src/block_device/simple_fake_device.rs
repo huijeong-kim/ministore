@@ -19,6 +19,13 @@ pub struct SimpleFakeDevice {
     device_info: DeviceInfo,
     data: Data,
 }
+impl std::fmt::Debug for SimpleFakeDevice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SimpleFakeDevice")
+            .field("device_info", &self.device_info)
+            .finish()
+    }
+}
 
 impl SimpleFakeDevice {
     pub fn new(name: String, size: u64) -> Result<Self, String> {
