@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package ministore;
+
+service MiniService {
+    rpc Status(StatusRequest) returns (StatusResponse) {};
+    rpc CreateFakeDevice(CreateFakeDeviceRequest) returns (CreateFakeDeviceResponse) {};
+}
+
+message StatusRequest {};
+message StatusResponse {
+    Status status = 1;
+};
+
+enum Status {
+    NotReady = 0;
+    Ready = 1;
+}
+
+message CreateFakeDeviceRequest {
+    string name = 1;
+    uint64 size = 2;
+};
+
+message CreateFakeDeviceResponse {
+    bool success = 1;
+    optional string reason = 2;
+};

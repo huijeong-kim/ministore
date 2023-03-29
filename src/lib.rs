@@ -1,5 +1,6 @@
 pub mod block_device;
 pub mod config;
+pub mod grpc_server;
 pub mod utils;
 
 use self::config::RunMode;
