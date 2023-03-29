@@ -19,9 +19,11 @@ pub struct DeviceConfig {
     pub device_size: Vec<String>,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum RunMode {
     Development,
     Production,
+    /// Custom run mode has test name. There should be a config file in config folder named with test name
     Custom(String),
 }
 impl std::fmt::Display for RunMode {
@@ -34,7 +36,7 @@ impl std::fmt::Display for RunMode {
     }
 }
 
-pub fn get_config(run_mode: RunMode) -> Result<MinistoreConfig, String> {
+pub fn get_config(run_mode: &RunMode) -> Result<MinistoreConfig, String> {
     let config = Config::builder()
         .add_source(File::with_name("config/default.toml"))
         .add_source(File::with_name(&format!("config/{}.toml", run_mode)))
@@ -60,7 +62,7 @@ mod tests {
 
     #[test]
     fn cofniguring_with_development_config_file_should_success() {
-        let config = get_config(RunMode::Development).expect("Failed to get config");
+        let config = get_config(&RunMode::Development).expect("Failed to get config");
 
         assert_eq!(config.log.level, "debug");
         assert_eq!(config.devices.use_fake, true);
@@ -68,7 +70,7 @@ mod tests {
 
     #[test]
     fn cofniguring_with_production_config_file_should_success() {
-        let config = get_config(RunMode::Production).expect("Failed to get config");
+        let config = get_config(&RunMode::Production).expect("Failed to get config");
 
         assert_eq!(config.log.level, "info");
         assert_eq!(config.devices.use_fake, false);
@@ -95,7 +97,7 @@ device_size = []
         file.write(test_config_str.as_bytes())
             .expect("Failed to write test config file");
 
-        let config = get_config(RunMode::Custom(test_type_name.to_string()));
+        let config = get_config(&RunMode::Custom(test_type_name.to_string()));
         assert_eq!(config.is_err(), true);
 
         std::fs::remove_file(format!("config/{}.toml", test_type_name))
