@@ -44,44 +44,6 @@ impl SimpleFakeDevice {
             true
         }
     }
-
-    pub fn load(&mut self) -> Result<(), String> {
-        let filename = self.device_info.name().clone();
-        let path = Path::new(&filename);
-
-        if !path.exists() {
-            return Err("No files to load".to_string());
-        }
-
-        let mut file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .open(&path)
-            .map_err(|e| e.to_string())?;
-
-        let loaded_data = bincode::deserialize_from(&mut file).map_err(|e| e.to_string())?;
-        self.data = loaded_data;
-
-        Ok(())
-    }
-
-    pub fn flush(&mut self) -> Result<(), String> {
-        let filename = self.device_info.name().clone();
-        let path = Path::new(&filename);
-
-        let mut file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .truncate(true)
-            .create(true)
-            .open(&path)
-            .map_err(|e| e.to_string())?;
-
-        bincode::serialize_into(&mut file, &self.data).map_err(|e| e.to_string())?;
-
-        Ok(())
-    }
 }
 
 impl BlockDevice for SimpleFakeDevice {
@@ -118,6 +80,44 @@ impl BlockDevice for SimpleFakeDevice {
 
     fn info(&self) -> &DeviceInfo {
         &self.device_info
+    }
+
+    fn load(&mut self) -> Result<(), String> {
+        let filename = self.device_info.name().clone();
+        let path = Path::new(&filename);
+
+        if !path.exists() {
+            return Err("No files to load".to_string());
+        }
+
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(&path)
+            .map_err(|e| e.to_string())?;
+
+        let loaded_data = bincode::deserialize_from(&mut file).map_err(|e| e.to_string())?;
+        self.data = loaded_data;
+
+        Ok(())
+    }
+
+    fn flush(&mut self) -> Result<(), String> {
+        let filename = self.device_info.name().clone();
+        let path = Path::new(&filename);
+
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(&path)
+            .map_err(|e| e.to_string())?;
+
+        bincode::serialize_into(&mut file, &self.data).map_err(|e| e.to_string())?;
+
+        Ok(())
     }
 }
 
