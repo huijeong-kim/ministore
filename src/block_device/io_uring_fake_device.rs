@@ -1,17 +1,14 @@
-pub struct IoUringFakeDevice {
-
-}
+pub struct IoUringFakeDevice {}
 
 #[cfg(target_os = "linux")]
 #[cfg(test)]
 mod tests {
     use io_uring::{opcode, types, IoUring};
-    use std::os::unix::io::AsRawFd;
     use std::fs;
-    
+    use std::os::unix::io::AsRawFd;
+
     #[test]
     pub fn temp_uring_test_on_linux() {
-        // FIXME: it's failing now...
         let mut ring = IoUring::new(8).expect("Failed to create IoUring");
 
         let fd = fs::OpenOptions::new()
@@ -23,11 +20,10 @@ mod tests {
 
         // Write data to the file
         {
-            let mut buf = vec![0x0; 1024];
-            let write_e = opcode::Write::new(types::Fd(fd.as_raw_fd()), buf.as_mut_ptr(), buf.len() as _)
-                .offset64(0)
-                .build()
-                .user_data(0x42);
+            let mut buf: [u8; 1024] = [0xA; 1024];
+            let write_e =
+                opcode::Write::new(types::Fd(fd.as_raw_fd()), buf.as_mut_ptr(), buf.len() as _)
+                .build();
 
             unsafe {
                 ring.submission()
@@ -35,16 +31,17 @@ mod tests {
                     .expect("submission queue is full");
             }
 
-            ring.submit_and_wait(1).expect("Failed to submit write request to ring");
+            ring.submit_and_wait(1)
+                .expect("Failed to submit write request to ring");
             let cqe = ring.completion().next().expect("completion queue is empty");
             assert!(cqe.result() >= 0, "write error: {}", cqe.result());
         }
 
         // Read data from the file
         {
-            let mut buf = vec![0x0; 1024];
-            let read_e = opcode::Read::new(types::Fd(fd.as_raw_fd()), buf.as_mut_ptr(), buf.len() as _)
-                .offset64(0)
+            let mut buf = [0u8; 1024];
+            let read_e =
+                opcode::Read::new(types::Fd(fd.as_raw_fd()), buf.as_mut_ptr(), buf.len() as _)
                 .build();
 
             unsafe {
@@ -53,10 +50,12 @@ mod tests {
                     .expect("submission queue is full");
             }
 
-            ring.submit_and_wait(1).expect("Failed to submit read request to ring");
+            ring.submit_and_wait(1)
+                .expect("Failed to submit read request to ring");
             let cqe = ring.completion().next().expect("completion queue is empty");
             assert!(cqe.result() >= 0, "read error: {}", cqe.result());
-            assert_eq!(cqe.user_data(), 0x42);
+
+            assert_eq!(buf, [0xA; 1024]);
         }
     }
 }

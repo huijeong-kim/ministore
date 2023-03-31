@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use self::{device_info::DeviceInfo, simple_fake_device::SimpleFakeDevice};
 
 mod device_info;
-pub mod simple_fake_device;
 pub mod io_uring_fake_device;
+pub mod simple_fake_device;
 
 pub const BLOCK_SIZE: usize = 4096;
 pub const UNMAP_BLOCK: DataBlock = DataBlock([0xF; BLOCK_SIZE]);
@@ -65,7 +65,11 @@ pub enum BlockDeviceType {
     SimpleFakeDevice,
 }
 
-fn create_block_device(device_type: BlockDeviceType, name: String, size: u64) -> Result<Box<dyn BlockDevice>, String> {
+fn create_block_device(
+    device_type: BlockDeviceType,
+    name: String,
+    size: u64,
+) -> Result<Box<dyn BlockDevice>, String> {
     match device_type {
         BlockDeviceType::SimpleFakeDevice => {
             let fake = SimpleFakeDevice::new(name, size)?;
