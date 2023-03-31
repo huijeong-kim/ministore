@@ -1,9 +1,10 @@
-use super::{device_info::DeviceInfo, BlockDevice, DataBlock, UNMAP_BLOCK};
+use super::data_type::{DataBlock, UNMAP_BLOCK};
+use super::{device_info::DeviceInfo, BlockDevice};
 use serde::{Deserialize, Serialize};
 use std::{fs::OpenOptions, path::Path};
 
 #[derive(Serialize, Deserialize, Clone)]
-struct Data(Vec<DataBlock>);
+pub struct Data(pub Vec<DataBlock>);
 impl Data {
     pub fn new(size: usize) -> Self {
         let mut items = Vec::new();
@@ -123,102 +124,8 @@ impl BlockDevice for SimpleFakeDevice {
 
 #[cfg(test)]
 mod tests {
-    use super::super::BLOCK_SIZE;
+    use super::super::data_type::BLOCK_SIZE;
     use super::*;
-
-    #[test]
-    fn create_block_device_with_unaligned_size_should_fail() {
-        let device = SimpleFakeDevice::new(
-            "block_device_should_provide_correct_device_info".to_string(),
-            1000000,
-        );
-
-        assert_eq!(device.is_err(), true);
-    }
-
-    #[test]
-    fn block_device_should_provide_correct_device_info() {
-        let device = SimpleFakeDevice::new(
-            "block_device_should_provide_correct_device_info".to_string(),
-            BLOCK_SIZE as u64 * 1000,
-        )
-        .expect("Failed to create fake device");
-
-        let info = device.info();
-        assert_eq!(
-            info.name(),
-            &"block_device_should_provide_correct_device_info".to_string()
-        );
-        assert_eq!(info.device_size(), BLOCK_SIZE as u64 * 1000);
-        assert_eq!(info.num_blocks(), 1000);
-    }
-
-    #[test]
-    fn write_and_read_should_success() {
-        let mut device = SimpleFakeDevice::new(
-            "write_and_read_should_success".to_string(),
-            BLOCK_SIZE as u64 * 1024,
-        )
-        .expect("Failed to create fake device");
-
-        let lba = 10;
-        let num_blocks = 5;
-        let mut buffers = Vec::new();
-        for num in 0..num_blocks {
-            let block_buffer = DataBlock([num as u8 as u8; BLOCK_SIZE]);
-            buffers.push(block_buffer);
-        }
-        assert_eq!(
-            device
-                .write(lba, num_blocks, buffers.clone().to_vec())
-                .is_ok(),
-            true
-        );
-
-        let read_result = device.read(lba, num_blocks);
-        assert_eq!(read_result.is_ok(), true);
-        assert_eq!(read_result.unwrap(), buffers);
-    }
-
-    #[test]
-    fn write_with_invalid_lba_range_should_fail() {
-        let mut device = SimpleFakeDevice::new(
-            "write_with_invalid_lba_range_should_fail".to_string(),
-            BLOCK_SIZE as u64 * 1024,
-        )
-        .expect("Failed to create fake device");
-
-        let buffer = Vec::new();
-        assert_eq!(device.write(0, 2000, buffer.clone()).is_err(), true);
-        assert_eq!(device.write(0, 0, buffer.clone()).is_err(), true);
-    }
-
-    #[test]
-    fn write_should_fail_when_not_enough_buffer_is_provided() {
-        let mut device = SimpleFakeDevice::new(
-            "write_should_fail_when_not_enough_buffer_is_provided".to_string(),
-            BLOCK_SIZE as u64 * 1024,
-        )
-        .expect("Failed to create fake device");
-
-        let mut buffer = Vec::new();
-        for offset in 0..5 {
-            buffer.push(DataBlock([offset as u8; BLOCK_SIZE]));
-        }
-        assert_eq!(device.write(0, 10, buffer.clone()).is_err(), true);
-    }
-
-    #[test]
-    fn read_with_invalid_lba_range_should_fail() {
-        let device = SimpleFakeDevice::new(
-            "read_with_invalid_lba_range_should_fail".to_string(),
-            BLOCK_SIZE as u64 * 1024,
-        )
-        .expect("Failed to create fake device");
-
-        assert_eq!(device.read(0, 2000).is_err(), true);
-        assert_eq!(device.read(0, 0).is_err(), true);
-    }
 
     #[test]
     fn data_should_be_loaded_from_the_file() {
