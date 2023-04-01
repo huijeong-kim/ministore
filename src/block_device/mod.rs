@@ -178,4 +178,45 @@ mod tests {
             assert_eq!(device.read(0, 0).is_err(), true);
         });
     }
+
+    #[test]
+    fn flush_and_load_should_success() {
+        for_each_block_device_type(|device_type| {
+            // Write data and flush all
+            {
+                let mut device = create_block_device(
+                    device_type.clone(),
+                    "flush_and_load_should_success".to_string(),
+                    BLOCK_SIZE as u64 * 1024,
+                ).expect("Failed to create block device");
+
+                device.write(0, 3, 
+                    vec![DataBlock([0xA; BLOCK_SIZE]),
+                                DataBlock([0xB; BLOCK_SIZE]),
+                                DataBlock([0xC; BLOCK_SIZE])])
+                    .expect("Failed to write data");
+
+                device.flush().expect("Failed to flush data");
+            }
+
+            // Load data and verify
+            {
+                let mut device = create_block_device(
+                    device_type,
+                    "flush_and_load_should_success".to_string(),
+                    BLOCK_SIZE as u64 * 1024,
+                ).expect("Failed to create block device");
+
+                device.load().expect("Failed to load data");
+
+                let read_data = device.read(0, 3).expect("Failed to read data");
+                assert_eq!(read_data, vec![DataBlock([0xA; BLOCK_SIZE]),
+                                            DataBlock([0xB; BLOCK_SIZE]),
+                                            DataBlock([0xC; BLOCK_SIZE])]);
+            }
+
+            std::fs::remove_file("flush_and_load_should_success")
+                .expect("Failed to remove test file");
+        });
+    }
 }
