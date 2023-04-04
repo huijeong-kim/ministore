@@ -7,6 +7,22 @@ mod tests {
     use std::fs;
     use std::os::unix::io::AsRawFd;
 
+    struct TestFile {
+        path: &'static str,
+    }
+
+    impl TestFile {
+        fn new(path: &'static str) -> Self {
+            TestFile { path }
+        }
+    }
+
+    impl Drop for TestFile {
+        fn drop(&mut self) {
+            std::fs::remove_file(self.path).expect("Failed to remove test file");
+        }
+    }
+
     #[test]
     pub fn temp_uring_test_on_linux() {
         let mut ring = IoUring::new(8).expect("Failed to create IoUring");
@@ -17,6 +33,8 @@ mod tests {
             .create(true)
             .open("test.txt")
             .expect("Failed to open file");
+
+        let _test_file = TestFile::new("test.txt");
 
         // Write data to the file
         {
