@@ -6,42 +6,34 @@ mod tests {
     use io_uring::{opcode, types, IoUring};
     use std::fs;
     use std::os::unix::io::AsRawFd;
+    use std::panic;
+    use std::path::Path;
 
-    struct TestFile {
-        path: &'static str,
-    }
-
-    impl TestFile {
-        fn new(path: &'static str) -> Self {
-            TestFile { path }
+    fn panic_hook(info: &panic::PanicInfo<'_>) {
+        println!("Panic occurred: {:?}", info);
+        let path = Path::new("text.txt");
+        if path.try_exists().unwrap() {
+            fs::remove_file(path).unwrap();
         }
     }
-
-    impl Drop for TestFile {
-        fn drop(&mut self) {
-            std::fs::remove_file(self.path).expect("Failed to remove test file");
-        }
-    }
-
     #[test]
     pub fn temp_uring_test_on_linux() {
+        panic::set_hook(Box::new(panic_hook));
         let mut ring = IoUring::new(8).expect("Failed to create IoUring");
 
+        let file_name = "text.txt";
         let fd = fs::OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
-            .open("test.txt")
+            .open(file_name.clone())
             .expect("Failed to open file");
-
-        let _test_file = TestFile::new("test.txt");
-
         // Write data to the file
         {
             let mut buf: [u8; 1024] = [0xA; 1024];
             let write_e =
                 opcode::Write::new(types::Fd(fd.as_raw_fd()), buf.as_mut_ptr(), buf.len() as _)
-                .build();
+                    .build();
 
             unsafe {
                 ring.submission()
@@ -60,7 +52,7 @@ mod tests {
             let mut buf = [0u8; 1024];
             let read_e =
                 opcode::Read::new(types::Fd(fd.as_raw_fd()), buf.as_mut_ptr(), buf.len() as _)
-                .build();
+                    .build();
 
             unsafe {
                 ring.submission()
@@ -74,6 +66,7 @@ mod tests {
             assert!(cqe.result() >= 0, "read error: {}", cqe.result());
 
             assert_eq!(buf, [0xA; 1024]);
+            fs::remove_file(file_name).unwrap();
         }
     }
 }
