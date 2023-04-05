@@ -9,7 +9,7 @@ pub mod simple_fake_device;
 pub trait BlockDevice {
     fn info(&self) -> &DeviceInfo;
     fn write(&mut self, lba: u64, num_blocks: u64, buffer: Vec<DataBlock>) -> Result<(), String>;
-    fn read(&self, lba: u64, num_blocks: u64) -> Result<Vec<DataBlock>, String>;
+    fn read(&mut self, lba: u64, num_blocks: u64) -> Result<Vec<DataBlock>, String>;
     fn load(&mut self) -> Result<(), String>;
     fn flush(&mut self) -> Result<(), String>;
 }
@@ -17,6 +17,7 @@ pub trait BlockDevice {
 #[derive(Debug, EnumIter, Clone, Display)]
 pub enum BlockDeviceType {
     SimpleFakeDevice,
+    IoUringFakeDevice,
 }
 
 fn create_block_device(
@@ -29,7 +30,20 @@ fn create_block_device(
             let fake = SimpleFakeDevice::new(name, size)?;
             Ok(Box::new(fake))
         }
+        BlockDeviceType::IoUringFakeDevice => create_io_uring_fake_device(name, size),
     }
+}
+
+#[cfg(target_os = "linux")]
+fn create_io_uring_fake_device(name: String, size: u64) -> Result<Box<dyn BlockDevice>, String> {
+    let device = io_uring_fake_device::IoUringFakeDevice::new(name, size)?;
+    Ok(Box::new(device))
+}
+#[cfg(not(target_os = "linux"))]
+fn create_io_uring_fake_device(name: String, size: u64) -> Result<Box<dyn BlockDevice>, String> {
+    // Use SimpleFakeDevice instead when target os is not a linux
+    let device = SimpleFakeDevice::new(name, size)?;
+    Ok(Box::new(device))
 }
 
 #[cfg(test)]
@@ -167,7 +181,7 @@ mod tests {
     #[test]
     fn read_with_invalid_lba_range_should_fail() {
         for_each_block_device_type(|device_type| {
-            let device = create_block_device(
+            let mut device = create_block_device(
                 device_type,
                 "read_with_invalid_lba_range_should_fail".to_string(),
                 BLOCK_SIZE as u64 * 1024,
@@ -180,6 +194,22 @@ mod tests {
     }
 
     #[test]
+    fn reading_unwritten_lbas_should_return_unmap_data() {
+        for_each_block_device_type(|device_type| {
+            let mut device = create_block_device(
+                device_type,
+                "reading_unwritten_lbas_should_return_unmap_data".to_string(),
+                BLOCK_SIZE as u64 * 1024,
+            )
+            .expect("Failed to create fake device");
+
+            let read_data = device.read(0, 1).expect("Failed to read data");
+            assert_eq!(read_data.len(), 1);
+            assert_eq!(*read_data.get(0).unwrap(), UNMAP_BLOCK);
+        });
+    }
+
+    #[test]
     fn flush_and_load_should_success() {
         for_each_block_device_type(|device_type| {
             // Write data and flush all
@@ -188,12 +218,19 @@ mod tests {
                     device_type.clone(),
                     "flush_and_load_should_success".to_string(),
                     BLOCK_SIZE as u64 * 1024,
-                ).expect("Failed to create block device");
+                )
+                .expect("Failed to create block device");
 
-                device.write(0, 3, 
-                    vec![DataBlock([0xA; BLOCK_SIZE]),
-                                DataBlock([0xB; BLOCK_SIZE]),
-                                DataBlock([0xC; BLOCK_SIZE])])
+                device
+                    .write(
+                        0,
+                        3,
+                        vec![
+                            DataBlock([0xA; BLOCK_SIZE]),
+                            DataBlock([0xB; BLOCK_SIZE]),
+                            DataBlock([0xC; BLOCK_SIZE]),
+                        ],
+                    )
                     .expect("Failed to write data");
 
                 device.flush().expect("Failed to flush data");
@@ -205,14 +242,20 @@ mod tests {
                     device_type,
                     "flush_and_load_should_success".to_string(),
                     BLOCK_SIZE as u64 * 1024,
-                ).expect("Failed to create block device");
+                )
+                .expect("Failed to create block device");
 
                 device.load().expect("Failed to load data");
 
                 let read_data = device.read(0, 3).expect("Failed to read data");
-                assert_eq!(read_data, vec![DataBlock([0xA; BLOCK_SIZE]),
-                                            DataBlock([0xB; BLOCK_SIZE]),
-                                            DataBlock([0xC; BLOCK_SIZE])]);
+                assert_eq!(
+                    read_data,
+                    vec![
+                        DataBlock([0xA; BLOCK_SIZE]),
+                        DataBlock([0xB; BLOCK_SIZE]),
+                        DataBlock([0xC; BLOCK_SIZE])
+                    ]
+                );
             }
 
             std::fs::remove_file("flush_and_load_should_success")
