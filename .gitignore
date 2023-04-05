@@ -1,12 +1,2 @@
 # Rust output files
 target/
-
-# Compiled Rust binaries
-**/*.rs.bk
-**/*.rlib
-**/*.rmeta
-**/*.o
-**/*.d
-
-# Cargo.lock
-Cargo.lock
