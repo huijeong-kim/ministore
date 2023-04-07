@@ -65,7 +65,7 @@ impl BlockDevice for SimpleFakeDevice {
         Ok(())
     }
 
-    fn read(&self, lba: u64, num_blocks: u64) -> Result<Vec<DataBlock>, String> {
+    fn read(&mut self, lba: u64, num_blocks: u64) -> Result<Vec<DataBlock>, String> {
         if self.is_valid_range(lba, num_blocks) == false {
             return Err("Invalid lba ranges".to_string());
         }
