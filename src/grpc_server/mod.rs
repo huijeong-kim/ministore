@@ -12,13 +12,7 @@ pub mod ministore_proto {
 }
 
 pub async fn start_grpc_server(addr: SocketAddr) -> Result<(), String> {
-    Server::builder()
-        .add_service(MiniServiceServer::new(GrpcServer::default()))
-        .serve(addr)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    Ok(())
+    todo!()
 }
 
 #[derive(Default)]
@@ -30,25 +24,14 @@ impl MiniService for GrpcServer {
         &self,
         _request: tonic::Request<StatusRequest>,
     ) -> Result<tonic::Response<StatusResponse>, tonic::Status> {
-        let reply = StatusResponse {
-            status: Status::Ready as i32,
-        };
-
-        Ok(Response::new(reply))
+        todo!()
     }
 
     async fn create_fake_device(
         &self,
         request: tonic::Request<CreateFakeDeviceRequest>,
     ) -> Result<tonic::Response<CreateFakeDeviceResponse>, tonic::Status> {
-        let _request = request.into_inner();
-
-        let reply = CreateFakeDeviceResponse {
-            success: true,
-            reason: None,
-        };
-
-        Ok(Response::new(reply))
+        todo!()
     }
 }
 
@@ -74,7 +57,7 @@ mod tests {
             let mut client = MiniServiceClient::connect(addr_for_client)
                 .await
                 .expect("Failed to start test client");
-            let request = tonic::Request::new(StatusRequest {});
+            let request: tonic::Request<StatusRequest> = tonic::Request::new(StatusRequest {});
 
             let response = client
                 .status(request)

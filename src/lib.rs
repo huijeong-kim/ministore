@@ -6,23 +6,7 @@ pub mod utils;
 use self::config::RunMode;
 
 pub fn start(devel: bool, test_name: Option<&String>) -> Result<RunMode, String> {
-    let run_mode = get_run_mode(devel, test_name);
-    let config = config::get_config(&run_mode)?;
-    println!("config: {:#?}", config);
-
-    // Do something here..
-
-    Ok(run_mode)
-}
-
-fn get_run_mode(devel: bool, test_name: Option<&String>) -> RunMode {
-    if test_name.is_some() {
-        RunMode::Custom(test_name.unwrap().clone())
-    } else if devel == true {
-        RunMode::Development
-    } else {
-        RunMode::Production
-    }
+    todo!()
 }
 
 #[cfg(test)]

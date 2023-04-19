@@ -37,21 +37,7 @@ impl std::fmt::Display for RunMode {
 }
 
 pub fn get_config(run_mode: &RunMode) -> Result<MinistoreConfig, String> {
-    let config = Config::builder()
-        .add_source(File::with_name("config/default.toml"))
-        .add_source(File::with_name(&format!("config/{}.toml", run_mode)))
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    let config: MinistoreConfig = config.try_deserialize().map_err(|e| e.to_string())?;
-
-    if config.devices.use_fake == true
-        && config.devices.list.len() != config.devices.device_size.len()
-    {
-        return Err("All fake device size should be provided".to_string());
-    }
-
-    Ok(config)
+    todo!()
 }
 
 #[cfg(test)]
