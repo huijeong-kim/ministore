@@ -1,13 +1,19 @@
 use serde::{Deserialize, Serialize};
 
 pub const BLOCK_SIZE: usize = 4096;
-pub const UNMAP_BLOCK: DataBlock = DataBlock([0xF; BLOCK_SIZE]);
+pub const UNMAP_BLOCK: DataBlock = DataBlock([0xFF; BLOCK_SIZE]);
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct DataBlock(pub [u8; BLOCK_SIZE]);
 
+impl std::fmt::Debug for DataBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("DataBlock").field(&self.0[0]).finish()
+    }
+}
+
 /// Below is the Serialize / Deserialize implementation for DataBlock
-/// You may need this if you want to serialize or deserialize DataBlock 
+/// You may need this if you want to serialize or deserialize DataBlock
 impl Serialize for DataBlock {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

@@ -1,3 +1,4 @@
+use super::BlockDeviceType;
 use super::{data_type::DataBlock, device_info::DeviceInfo, BlockDevice};
 use crate::block_device::data_type::{BLOCK_SIZE, UNMAP_BLOCK};
 use std::io::{Seek, Write};
@@ -14,7 +15,7 @@ pub struct IoUringFakeDevice {
 #[cfg(target_os = "linux")]
 impl IoUringFakeDevice {
     pub fn new(name: String, size: u64) -> Result<Self, String> {
-        let device_info = DeviceInfo::new(name, size)?;
+        let device_info = DeviceInfo::new(BlockDeviceType::IoUringFakeDevice, name, size)?;
         let ring = io_uring::IoUring::new(URING_SIZE).map_err(|e| e.to_string())?;
 
         let filename = device_info.name();

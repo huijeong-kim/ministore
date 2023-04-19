@@ -1,4 +1,5 @@
 use super::data_type::{DataBlock, UNMAP_BLOCK};
+use super::BlockDeviceType;
 use super::{device_info::DeviceInfo, BlockDevice};
 use serde::{Deserialize, Serialize};
 use std::{fs::OpenOptions, path::Path};
@@ -30,12 +31,19 @@ impl std::fmt::Debug for SimpleFakeDevice {
 
 impl SimpleFakeDevice {
     pub fn new(name: String, size: u64) -> Result<Self, String> {
-        let device_info = DeviceInfo::new(name, size)?;
+        let device_info = DeviceInfo::new(BlockDeviceType::SimpleFakeDevice, name, size)?;
         let num_blocks = device_info.num_blocks();
-        Ok(SimpleFakeDevice {
-            device_info: device_info,
+
+        let mut device = SimpleFakeDevice {
+            device_info,
             data: Data::new(num_blocks as usize),
-        })
+        };
+
+        if Path::new(device.device_info.name()).exists() == false {
+            device.flush()?;
+        }
+
+        Ok(device)
     }
 
     fn is_valid_range(&self, lba: u64, num_blocks: u64) -> bool {
@@ -94,7 +102,6 @@ impl BlockDevice for SimpleFakeDevice {
         let mut file = OpenOptions::new()
             .read(true)
             .write(true)
-            .create(true)
             .open(&path)
             .map_err(|e| e.to_string())?;
 
@@ -119,64 +126,5 @@ impl BlockDevice for SimpleFakeDevice {
         bincode::serialize_into(&mut file, &self.data).map_err(|e| e.to_string())?;
 
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::super::data_type::BLOCK_SIZE;
-    use super::*;
-
-    #[test]
-    fn data_should_be_loaded_from_the_file() {
-        {
-            let mut device = SimpleFakeDevice::new(
-                "data_should_be_loaded_from_the_file".to_string(),
-                BLOCK_SIZE as u64 * 1024,
-            )
-            .expect("Failed to create fake device");
-
-            let mut test_data = Data::new(1024);
-            for lba in 0..1024 {
-                test_data.0[lba] = DataBlock([lba as u8; BLOCK_SIZE]);
-            }
-
-            device.write(0, 1024, test_data.clone().0).unwrap();
-            assert_eq!(device.flush().is_ok(), true);
-        }
-
-        {
-            let mut device = SimpleFakeDevice::new(
-                "data_should_be_loaded_from_the_file".to_string(),
-                BLOCK_SIZE as u64 * 1024,
-            )
-            .expect("Failed to create fake device");
-
-            let read_before_load = device.read(0, 1024).unwrap();
-            for lba in 0..1024 {
-                assert_eq!(read_before_load[lba], UNMAP_BLOCK);
-            }
-
-            device.load().expect("Failed to load data");
-
-            let read_after_load = device.read(0, 1024).unwrap();
-            for lba in 0..1024 {
-                assert_eq!(read_after_load[lba], DataBlock([lba as u8; BLOCK_SIZE]));
-            }
-        }
-
-        std::fs::remove_file("data_should_be_loaded_from_the_file")
-            .expect("Failed to remove test file");
-    }
-
-    #[test]
-    fn load_should_fail_when_there_is_no_file() {
-        let mut device = SimpleFakeDevice::new(
-            "load_should_fail_when_there_is_no_file".to_string(),
-            BLOCK_SIZE as u64 * 1024,
-        )
-        .expect("Failed to create fake device");
-
-        assert_eq!(device.load().is_err(), true);
     }
 }

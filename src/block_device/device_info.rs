@@ -1,20 +1,26 @@
-use super::data_type::BLOCK_SIZE;
+use super::{data_type::BLOCK_SIZE, BlockDeviceType};
 
 #[derive(Clone, Debug)]
 pub struct DeviceInfo {
+    device_type: BlockDeviceType,
     device_name: String,
     device_size: u64,
     num_blocks: u64,
 }
 
 impl DeviceInfo {
-    pub fn new(device_name: String, device_size: u64) -> Result<Self, String> {
+    pub fn new(
+        device_type: BlockDeviceType,
+        device_name: String,
+        device_size: u64,
+    ) -> Result<Self, String> {
         match device_size % BLOCK_SIZE as u64 != 0 {
             true => return Err("Unaligned device size".to_string()),
             false => (),
         }
 
         Ok(Self {
+            device_type,
             device_name,
             device_size,
             num_blocks: device_size / BLOCK_SIZE as u64,
@@ -32,6 +38,10 @@ impl DeviceInfo {
     pub fn num_blocks(&self) -> u64 {
         self.num_blocks
     }
+
+    pub fn device_type(&self) -> BlockDeviceType {
+        self.device_type.clone()
+    }
 }
 
 #[cfg(test)]
@@ -45,7 +55,11 @@ mod test {
         let num_blocks = 100;
         let device_size = block_size * num_blocks;
 
-        let device_info = DeviceInfo::new(device_name.to_string(), device_size);
+        let device_info = DeviceInfo::new(
+            BlockDeviceType::SimpleFakeDevice,
+            device_name.to_string(),
+            device_size,
+        );
         assert_eq!(device_info.is_ok(), true);
 
         assert_eq!(
@@ -57,6 +71,10 @@ mod test {
             device_info.as_ref().unwrap().num_blocks(),
             device_size / block_size
         );
+        assert_eq!(
+            device_info.as_ref().unwrap().device_type(),
+            BlockDeviceType::SimpleFakeDevice
+        );
     }
 
     #[test]
@@ -64,7 +82,11 @@ mod test {
         let device_name = "create_device_info";
         let device_size = 500000;
 
-        let device_info = DeviceInfo::new(device_name.to_string(), device_size);
+        let device_info = DeviceInfo::new(
+            BlockDeviceType::SimpleFakeDevice,
+            device_name.to_string(),
+            device_size,
+        );
 
         assert_eq!(device_info.is_err(), true);
     }
