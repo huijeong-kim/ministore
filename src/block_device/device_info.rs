@@ -2,35 +2,23 @@ use super::data_type::BLOCK_SIZE;
 
 #[derive(Clone, Debug)]
 pub struct DeviceInfo {
-    device_name: String,
-    device_size: u64,
-    num_blocks: u64,
 }
 
 impl DeviceInfo {
     pub fn new(device_name: String, device_size: u64) -> Result<Self, String> {
-        match device_size % BLOCK_SIZE as u64 != 0 {
-            true => return Err("Unaligned device size".to_string()),
-            false => (),
-        }
-
-        Ok(Self {
-            device_name,
-            device_size,
-            num_blocks: device_size / BLOCK_SIZE as u64,
-        })
+        todo!()
     }
 
     pub fn name(&self) -> &String {
-        &self.device_name
+        todo!()
     }
 
     pub fn device_size(&self) -> u64 {
-        self.device_size
+        todo!()
     }
 
     pub fn num_blocks(&self) -> u64 {
-        self.num_blocks
+        todo!()
     }
 }
 

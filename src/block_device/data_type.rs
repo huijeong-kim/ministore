@@ -6,6 +6,8 @@ pub const UNMAP_BLOCK: DataBlock = DataBlock([0xF; BLOCK_SIZE]);
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DataBlock(pub [u8; BLOCK_SIZE]);
 
+/// Below is the Serialize / Deserialize implementation for DataBlock
+/// You may need this if you want to serialize or deserialize DataBlock 
 impl Serialize for DataBlock {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
