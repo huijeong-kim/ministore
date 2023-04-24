@@ -1,4 +1,5 @@
-use super::{data_type::BLOCK_SIZE, BlockDeviceType};
+use super::data_type::BLOCK_SIZE;
+use super::BlockDeviceType;
 
 #[derive(Clone, Debug)]
 pub struct DeviceInfo {

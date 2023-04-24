@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use crate::block_device::{create_block_device, i32_to_block_device_type, BlockDevice};
+use crate::block_device::{create_block_device, BlockDevice};
+use crate::block_device_common::i32_to_block_device_type;
 
 #[derive(Default)]
 pub struct DeviceManager {

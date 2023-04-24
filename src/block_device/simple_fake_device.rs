@@ -1,6 +1,7 @@
-use super::data_type::{DataBlock, UNMAP_BLOCK};
-use super::BlockDeviceType;
-use super::{device_info::DeviceInfo, BlockDevice};
+use crate::block_device_common::data_type::{DataBlock, UNMAP_BLOCK};
+use crate::block_device_common::device_info::DeviceInfo;
+use super::{BlockDeviceType, BlockDevice};
+
 use serde::{Deserialize, Serialize};
 use std::{fs::OpenOptions, path::Path};
 

@@ -1,8 +1,9 @@
-use self::{data_type::DataBlock, device_info::DeviceInfo, simple_fake_device::SimpleFakeDevice};
-use strum_macros::{Display, EnumIter};
+use crate::block_device_common::data_type::DataBlock;
+use crate::block_device_common::device_info::DeviceInfo;
+use crate::block_device_common::BlockDeviceType;
 
-mod data_type;
-mod device_info;
+use simple_fake_device::SimpleFakeDevice;
+
 pub mod io_uring_fake_device;
 pub mod simple_fake_device;
 
@@ -12,29 +13,6 @@ pub trait BlockDevice: Send + Sync {
     fn read(&mut self, lba: u64, num_blocks: u64) -> Result<Vec<DataBlock>, String>;
     fn load(&mut self) -> Result<(), String>;
     fn flush(&mut self) -> Result<(), String>;
-}
-
-#[derive(Debug, EnumIter, Clone, Display, PartialEq)]
-pub enum BlockDeviceType {
-    SimpleFakeDevice,
-    IoUringFakeDevice,
-}
-
-pub fn i32_to_block_device_type(value: i32) -> Result<BlockDeviceType, String> {
-    match value {
-        0 => Ok(BlockDeviceType::SimpleFakeDevice),
-        1 => Ok(BlockDeviceType::IoUringFakeDevice),
-        _ => Err(format!("Wrong device type, type={}", value)),
-    }
-}
-
-impl From<BlockDeviceType> for i32 {
-    fn from(value: BlockDeviceType) -> Self {
-        match value {
-            BlockDeviceType::SimpleFakeDevice => 0,
-            BlockDeviceType::IoUringFakeDevice => 1,
-        }
-    }
 }
 
 pub fn create_block_device(
@@ -65,7 +43,7 @@ fn create_io_uring_fake_device(_name: String, _size: u64) -> Result<Box<dyn Bloc
 mod tests {
     use std::path::Path;
 
-    use super::data_type::*;
+    use crate::block_device_common::data_type::*;
     use super::*;
     use strum::IntoEnumIterator;
 
