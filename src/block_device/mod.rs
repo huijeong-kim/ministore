@@ -26,6 +26,9 @@ pub fn create_block_device(
             Ok(Box::new(fake))
         }
         BlockDeviceType::IoUringFakeDevice => create_io_uring_fake_device(name, size),
+        BlockDeviceType::AsyncSimpleFakeDevice => {
+            Err("Cannot create BlockDevice trait for AsyncSimpleFakeDevice".to_string())
+        }
     }
 }
 
@@ -43,8 +46,8 @@ fn create_io_uring_fake_device(_name: String, _size: u64) -> Result<Box<dyn Bloc
 mod tests {
     use std::path::Path;
 
-    use crate::block_device_common::data_type::*;
     use super::*;
+    use crate::block_device_common::data_type::*;
     use strum::IntoEnumIterator;
 
     #[cfg(target_os = "linux")]
@@ -58,6 +61,7 @@ mod tests {
         match device_type {
             BlockDeviceType::SimpleFakeDevice => BlockDeviceType::SimpleFakeDevice,
             BlockDeviceType::IoUringFakeDevice => BlockDeviceType::SimpleFakeDevice,
+            BlockDeviceType::AsyncSimpleFakeDevice => panic!("async type cannot be used here"),
         }
     }
 
@@ -66,11 +70,13 @@ mod tests {
         F: FnMut(BlockDeviceType) -> () + std::panic::UnwindSafe,
     {
         for device_type in BlockDeviceType::iter() {
-            let device_type = translate_device_type(device_type);
-            if let Err(e) = catch_assertion_failure(std::panic::AssertUnwindSafe(|| {
-                f(device_type.clone());
-            })) {
-                panic!("{}, device_type={}", e, device_type);
+            if device_type.is_sync() {
+                let device_type = translate_device_type(device_type);
+                if let Err(e) = catch_assertion_failure(std::panic::AssertUnwindSafe(|| {
+                    f(device_type.clone());
+                })) {
+                    panic!("{}, device_type={}", e, device_type);
+                }
             }
         }
     }
