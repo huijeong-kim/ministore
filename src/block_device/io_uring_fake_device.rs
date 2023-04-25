@@ -1,6 +1,6 @@
-use super::BlockDeviceType;
-use super::{data_type::DataBlock, device_info::DeviceInfo, BlockDevice};
-use crate::block_device::data_type::{BLOCK_SIZE, UNMAP_BLOCK};
+use super::{BlockDevice, BlockDeviceType};
+use crate::block_device_common::data_type::{DataBlock, BLOCK_SIZE, UNMAP_BLOCK};
+use crate::block_device_common::device_info::DeviceInfo;
 use std::io::{Seek, Write};
 use std::os::fd::AsRawFd;
 

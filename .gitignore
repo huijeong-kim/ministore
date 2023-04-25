@@ -1,2 +1,4 @@
 # Rust output files
 target/
+.vscode/
+.DS_Store
