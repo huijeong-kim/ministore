@@ -4,25 +4,58 @@ package ministore;
 
 service MiniService {
     rpc Status(StatusRequest) returns (StatusResponse) {};
+
+    // Test interfaces
     rpc CreateFakeDevice(CreateFakeDeviceRequest) returns (CreateFakeDeviceResponse) {};
+    rpc DeleteFakeDevice(DeleteFakeDeviceRequest) returns (DeleteFakeDeviceResponse) {};
+    rpc ListFakeDevices(ListFakeDevicesRequest) returns (ListFakeDevicesResponse) {};
 }
 
-message StatusRequest {};
+message StatusRequest {}
 message StatusResponse {
     Status status = 1;
-};
+}
 
 enum Status {
     NotReady = 0;
     Ready = 1;
 }
 
+enum FakeDeviceType {
+    SimpleFakeDevice = 0;
+    IoUringFakeDevice = 1;
+}
+
 message CreateFakeDeviceRequest {
     string name = 1;
     uint64 size = 2;
+    FakeDeviceType device_type = 3;
 };
 
 message CreateFakeDeviceResponse {
     bool success = 1;
     optional string reason = 2;
 };
+
+message DeleteFakeDeviceRequest {
+    string name = 1;
+}
+
+message DeleteFakeDeviceResponse {
+    bool success = 1;
+    optional string reason = 2;
+}
+
+message FakeDevice {
+    string name = 1;
+    uint64 size = 2;
+    FakeDeviceType device_type = 3;
+}
+
+message ListFakeDevicesRequest {}
+
+message ListFakeDevicesResponse {
+    bool success = 1;
+    optional string reason = 2;
+    repeated FakeDevice device_list = 3;
+}

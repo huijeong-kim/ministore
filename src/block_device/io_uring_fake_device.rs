@@ -1,5 +1,6 @@
-use super::{data_type::DataBlock, device_info::DeviceInfo, BlockDevice};
-use crate::block_device::data_type::{BLOCK_SIZE, UNMAP_BLOCK};
+use super::{BlockDevice, BlockDeviceType};
+use crate::block_device_common::data_type::{DataBlock, BLOCK_SIZE, UNMAP_BLOCK};
+use crate::block_device_common::device_info::DeviceInfo;
 use std::io::{Seek, Write};
 use std::os::fd::AsRawFd;
 
@@ -7,6 +8,7 @@ const URING_SIZE: u32 = 8;
 
 #[cfg(target_os = "linux")]
 pub struct IoUringFakeDevice {
+    ring: io_uring::IoUring,
 }
 
 #[cfg(target_os = "linux")]
@@ -33,6 +35,7 @@ impl BlockDevice for IoUringFakeDevice {
     fn load(&mut self) -> Result<(), String> {
         todo!()
     }
+
     fn flush(&mut self) -> Result<(), String> {
         todo!()
     }
