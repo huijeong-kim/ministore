@@ -64,6 +64,15 @@ mod tests {
 
     #[test]
     fn configuring_fake_devices_without_size_list_should_fail() {
+        let test_type_name = "configuring_fake_devices_without_size_list_should_fail";
+
+        let test_file_name = format!("config/{}.toml", test_type_name);
+        std::panic::set_hook(Box::new(move |_| {
+            let path = std::path::Path::new(&test_file_name);
+            if path.try_exists().unwrap() {
+                std::fs::remove_file(&test_file_name).expect("Failed to remove test file");
+            }
+        }));
         let test_config_str = r#"[log]
 level = "debug"
 
@@ -77,7 +86,6 @@ list = [
 device_size = []
         "#;
 
-        let test_type_name = "configuring_fake_devices_without_size_list_should_fail";
         let mut file = std::fs::File::create(format!("config/{}.toml", test_type_name))
             .expect("Failed to create test file");
         file.write(test_config_str.as_bytes())
