@@ -4,6 +4,9 @@ package ministore;
 
 service MiniService {
     rpc Status(StatusRequest) returns (StatusResponse) {};
+    
+    rpc Read(ReadRequest) returns (ReadResponse) {};
+    rpc Write(WriteRequest) returns (WriteResponse) {};
 
     // Test interfaces
     rpc CreateFakeDevice(CreateFakeDeviceRequest) returns (CreateFakeDeviceResponse) {};
@@ -19,6 +22,34 @@ message StatusResponse {
 enum Status {
     NotReady = 0;
     Ready = 1;
+}
+
+message Data {
+    repeated bytes data = 1; // Each data should be block size (4KB)
+}
+
+message ReadRequest {
+    string name = 1;
+    uint64 lba = 2;
+    uint64 num_blocks = 3;
+}
+
+message ReadResponse {
+    bool success = 1;
+    optional Data data = 2;
+    optional string reason = 3;
+}
+
+message WriteRequest {
+    string name = 1;
+    uint64 lba = 2;
+    uint64 num_blocks = 3;
+    Data data = 4;
+}
+
+message WriteResponse {
+    bool success = 1;
+    optional string reason = 2;
 }
 
 enum FakeDeviceType {

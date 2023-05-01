@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::block_device::{create_block_device, BlockDevice};
+use crate::block_device_common::data_type::DataBlock;
 use crate::block_device_common::i32_to_block_device_type;
 
 #[derive(Default)]
@@ -51,6 +52,35 @@ impl DeviceManager {
                 )
             })
             .collect())
+    }
+
+    pub fn write(
+        &mut self,
+        device_name: &String,
+        lba: u64,
+        num_blocks: u64,
+        blocks: Vec<DataBlock>,
+    ) -> Result<(), String> {
+        if self.devices.contains_key(device_name) == false {
+            return Err("No such device".to_string());
+        }
+
+        let device = self.devices.get_mut(device_name).unwrap();
+        device.write(lba, num_blocks, blocks)
+    }
+
+    pub fn read(
+        &mut self,
+        device_name: &String,
+        lba: u64,
+        num_blocks: u64,
+    ) -> Result<Vec<DataBlock>, String> {
+        if self.devices.contains_key(device_name) == false {
+            return Err("No such device".to_string());
+        }
+
+        let device = self.devices.get_mut(device_name).unwrap();
+        device.read(lba, num_blocks)
     }
 }
 
