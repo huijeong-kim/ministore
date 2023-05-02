@@ -254,7 +254,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn server_can_create_and_delete_fake_device() {
+    async fn server_should_be_able_to_create_and_delete_fake_device() {
         let addr = "127.0.0.1:8081";
         let addr_for_server = addr.parse().expect("Failed to parse socket addr");
         let addr_for_client = format!("http://{}", addr.clone());
@@ -327,7 +327,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn server_can_read_write_fake_device() {
+    async fn server_should_be_able_to_read_write_fake_device() {
         let addr = "127.0.0.1:8082";
         let addr_for_server = addr.parse().expect("Failed to parse socket addr");
         let addr_for_client = format!("http://{}", addr.clone());
@@ -343,8 +343,8 @@ mod tests {
                 .await
                 .expect("Failed to start test client");
 
-            // Create device
-            let device_name = "server_can_read_write_fake_device".to_string();
+            // Create device for test
+            let device_name = "server_should_be_able_to_read_write_fake_device".to_string();
             let request = tonic::Request::new(CreateFakeDeviceRequest {
                 name: device_name.clone(),
                 size: humansize_to_integer("1M").unwrap(),
@@ -367,7 +367,7 @@ mod tests {
                 ],
             };
             let request = tonic::Request::new(WriteRequest {
-                name: "server_can_read_write_fake_device".to_string(),
+                name: "server_should_be_able_to_read_write_fake_device".to_string(),
                 lba: 10,
                 num_blocks: 4,
                 data: Some(write_data.clone()),
@@ -378,7 +378,7 @@ mod tests {
 
             // Read data from the device
             let request = tonic::Request::new(ReadRequest {
-                name: "server_can_read_write_fake_device".to_string(),
+                name: "server_should_be_able_to_read_write_fake_device".to_string(),
                 lba: 10,
                 num_blocks: 4,
             });
@@ -388,6 +388,99 @@ mod tests {
 
             // Verify read data
             assert_eq!(response.data.unwrap(), write_data);
+
+            // Delete device for wrapup
+            let request = tonic::Request::new(DeleteFakeDeviceRequest {
+                name: "server_should_be_able_to_read_write_fake_device".to_string(),
+            });
+            let response = client
+                .delete_fake_device(request)
+                .await
+                .expect("Failed to delete device");
+            let response = response.into_inner();
+
+            assert_eq!(response.success, true, "{:?}", response);
+        });
+
+        test.await.unwrap();
+        start_server.abort();
+    }
+
+    #[tokio::test]
+    async fn server_should_replay_with_error_when_invalid_data_provided_for_write() {
+        let addr = "127.0.0.1:8083";
+        let addr_for_server = addr.parse().expect("Failed to parse socket addr");
+        let addr_for_client = format!("http://{}", addr.clone());
+
+        let start_server = tokio::spawn(async move {
+            start_grpc_server(addr_for_server)
+                .await
+                .expect("Failed to start grpc server");
+        });
+
+        let test = tokio::spawn(async move {
+            let mut client = MiniServiceClient::connect(addr_for_client)
+                .await
+                .expect("Failed to start test client");
+
+            // Create device for test
+            let request = tonic::Request::new(CreateFakeDeviceRequest {
+                name: "server_should_replay_with_error_when_invalid_data_provided_for_write"
+                    .to_string(),
+                size: humansize_to_integer("1M").unwrap(),
+                device_type: 0, // SimpleFakeDevice
+            });
+            let response = client
+                .create_fake_device(request)
+                .await
+                .expect("Failed to create fake device");
+            let response = response.into_inner();
+            assert_eq!(response.success, true, "{:?}", response);
+
+            // test 1. write request without data
+            let invalid_request = tonic::Request::new(WriteRequest {
+                name: "server_should_replay_with_error_when_invalid_data_provided_for_write"
+                    .to_string(),
+                lba: 0,
+                num_blocks: 1,
+                data: None,
+            });
+            let response = client
+                .write(invalid_request)
+                .await
+                .expect("Failed to request write");
+            let response = response.into_inner();
+            assert_eq!(response.success, false);
+
+            // test 2. write request with too-small data (smaller than the block size)
+            let invalid_write_data = ministore_proto::Data {
+                data: vec![vec![0xA as u8; 1024]],
+            };
+            let invalid_request = tonic::Request::new(WriteRequest {
+                name: "server_should_replay_with_error_when_invalid_data_provided_for_write"
+                    .to_string(),
+                lba: 0,
+                num_blocks: 1,
+                data: Some(invalid_write_data),
+            });
+            let response = client
+                .write(invalid_request)
+                .await
+                .expect("Failed to request write");
+            let response = response.into_inner();
+            assert_eq!(response.success, false);
+
+            // Delete device for wrapup
+            let request = tonic::Request::new(DeleteFakeDeviceRequest {
+                name: "server_should_replay_with_error_when_invalid_data_provided_for_write"
+                    .to_string(),
+            });
+            let response = client
+                .delete_fake_device(request)
+                .await
+                .expect("Failed to delete device");
+            let response = response.into_inner();
+            assert_eq!(response.success, true, "{:?}", response);
         });
 
         test.await.unwrap();
