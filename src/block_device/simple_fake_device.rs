@@ -3,6 +3,7 @@ use crate::block_device_common::data_type::{DataBlock, UNMAP_BLOCK};
 use crate::block_device_common::device_info::DeviceInfo;
 
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use std::{fs::OpenOptions, path::Path};
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -22,6 +23,7 @@ impl Data {
 pub struct SimpleFakeDevice {
     device_info: DeviceInfo,
     data: Data,
+    filepath: PathBuf,
 }
 impl std::fmt::Debug for SimpleFakeDevice {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -32,13 +34,14 @@ impl std::fmt::Debug for SimpleFakeDevice {
 }
 
 impl SimpleFakeDevice {
-    pub fn new(name: String, size: u64) -> Result<Self, String> {
+    pub fn new(name: String, size: u64, filepath: PathBuf) -> Result<Self, String> {
         let device_info = DeviceInfo::new(BlockDeviceType::SimpleFakeDevice, name, size)?;
         let num_blocks = device_info.num_blocks();
 
         let mut device = SimpleFakeDevice {
             device_info,
             data: Data::new(num_blocks as usize),
+            filepath,
         };
 
         if Path::new(device.device_info.name()).exists() == false {
@@ -95,7 +98,9 @@ impl BlockDevice for SimpleFakeDevice {
 
     fn load(&mut self) -> Result<(), String> {
         let filename = self.device_info.name().clone();
-        let path = Path::new(&filename);
+
+        let mut path = self.filepath.clone();
+        path.push(&filename);
 
         if !path.exists() {
             return Err("No files to load".to_string());
@@ -122,7 +127,9 @@ impl BlockDevice for SimpleFakeDevice {
 
     fn flush(&mut self) -> Result<(), String> {
         let filename = self.device_info.name().clone();
-        let path = Path::new(&filename);
+
+        let mut path = self.filepath.clone();
+        path.push(&filename);
 
         let mut file = OpenOptions::new()
             .read(true)

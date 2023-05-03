@@ -52,15 +52,9 @@ message WriteResponse {
     optional string reason = 2;
 }
 
-enum FakeDeviceType {
-    SimpleFakeDevice = 0;
-    IoUringFakeDevice = 1;
-}
-
 message CreateFakeDeviceRequest {
     string name = 1;
     uint64 size = 2;
-    FakeDeviceType device_type = 3;
 };
 
 message CreateFakeDeviceResponse {
@@ -80,7 +74,6 @@ message DeleteFakeDeviceResponse {
 message FakeDevice {
     string name = 1;
     uint64 size = 2;
-    FakeDeviceType device_type = 3;
 }
 
 message ListFakeDevicesRequest {}

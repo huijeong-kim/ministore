@@ -150,11 +150,12 @@ impl MiniService for GrpcServer {
     ) -> Result<tonic::Response<CreateFakeDeviceResponse>, tonic::Status> {
         let request = request.into_inner();
 
-        let reply = match self.device_manager.lock().unwrap().create_fake_device(
-            request.device_type,
-            &request.name,
-            request.size,
-        ) {
+        let reply = match self
+            .device_manager
+            .lock()
+            .unwrap()
+            .create_fake_device(&request.name, request.size)
+        {
             Ok(()) => CreateFakeDeviceResponse {
                 success: true,
                 reason: None,
@@ -208,7 +209,6 @@ impl MiniService for GrpcServer {
                     .map(|dev| FakeDevice {
                         name: dev.0.clone(),
                         size: dev.1,
-                        device_type: dev.2,
                     })
                     .collect(),
             },
@@ -226,7 +226,7 @@ impl MiniService for GrpcServer {
 #[cfg(test)]
 mod tests {
     use crate::{
-        block_device_common::data_type::BLOCK_SIZE,
+        block_device_common::data_type::BLOCK_SIZE, config::DeviceConfig,
         grpc_server::ministore_proto::mini_service_client::MiniServiceClient,
         utils::humansize_to_integer,
     };
@@ -234,7 +234,12 @@ mod tests {
     use super::*;
 
     fn test_device_manager() -> DeviceManager {
-        DeviceManager::default()
+        let config = DeviceConfig {
+            use_fake: true,
+            fake_device_location: "fakes".to_string(),
+            fake_device_type: "SimpleFake".to_string(),
+        };
+        DeviceManager::new(&config).expect("Failed to create device manager")
     }
 
     /// Be sure to use different port for each test, so that all tests can be executed in parallel.
@@ -289,7 +294,6 @@ mod tests {
             let request = tonic::Request::new(CreateFakeDeviceRequest {
                 name: device_name.clone(),
                 size: humansize_to_integer("1M").unwrap(),
-                device_type: 0, // SimpleFakeDevice
             });
             let response = client
                 .create_fake_device(request)
@@ -312,7 +316,6 @@ mod tests {
                 response.device_list.get(0).unwrap().size,
                 humansize_to_integer("1M").unwrap()
             );
-            assert_eq!(response.device_list.get(0).unwrap().device_type, 0);
 
             // Delete device and verify it using list devices
             let request = tonic::Request::new(DeleteFakeDeviceRequest {
@@ -362,7 +365,6 @@ mod tests {
             let request = tonic::Request::new(CreateFakeDeviceRequest {
                 name: device_name.clone(),
                 size: humansize_to_integer("1M").unwrap(),
-                device_type: 0, // SimpleFakeDevice
             });
             let response = client
                 .create_fake_device(request)
@@ -442,7 +444,6 @@ mod tests {
                 name: "server_should_replay_with_error_when_invalid_data_provided_for_write"
                     .to_string(),
                 size: humansize_to_integer("1M").unwrap(),
-                device_type: 0, // SimpleFakeDevice
             });
             let response = client
                 .create_fake_device(request)
