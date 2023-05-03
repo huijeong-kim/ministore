@@ -110,6 +110,10 @@ impl BlockDevice for SimpleFakeDevice {
         let loaded_data: SimpleFakeDevice =
             bincode::deserialize_from(&mut file).map_err(|e| e.to_string())?;
 
+        if loaded_data.device_info.device_type() != BlockDeviceType::SimpleFakeDevice {
+            return Err("Loaded device file type is invalid".to_string());
+        }
+
         self.device_info = loaded_data.device_info;
         self.data = loaded_data.data;
 

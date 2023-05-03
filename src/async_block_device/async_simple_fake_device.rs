@@ -120,6 +120,10 @@ impl AsyncSimpleFakeDevice {
         let loaded_data: AsyncSimpleFakeDevice =
             bincode::deserialize_from(data.as_slice()).map_err(|e| e.to_string())?;
 
+        if loaded_data.device_info.device_type() != BlockDeviceType::AsyncSimpleFakeDevice {
+            return Err("Loaded device file type is invalid".to_string());
+        }
+
         self.device_info = loaded_data.device_info;
         self.data = loaded_data.data;
 
