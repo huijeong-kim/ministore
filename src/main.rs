@@ -4,8 +4,8 @@ fn main() -> Result<(), String> {
     let matches = cli();
 
     let devel = matches.get_flag("devel");
-    let test_name = matches.get_one::<String>("test");
-    ministore::start(devel, test_name)?;
+    let test_configfile = matches.get_one::<String>("config");
+    ministore::start(devel, test_configfile)?;
 
     Ok(())
 }
@@ -22,12 +22,12 @@ fn cli() -> ArgMatches {
                 .action(ArgAction::SetTrue),
         )
         .arg(
-            Arg::new("test")
-                .short('t')
-                .help("Run ministore with test mode with test name")
-                .long("test"),
+            Arg::new("config")
+                .short('c')
+                .help("Run ministore with test mode with provided config file")
+                .long("config"),
         )
         // Only one of these arguments in a group can be used
-        .group(ArgGroup::new("run_mode").args(&["devel", "test"]))
+        .group(ArgGroup::new("run_mode").args(&["devel", "config"]))
         .get_matches()
 }
