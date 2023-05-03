@@ -5,7 +5,9 @@ fn main() -> Result<(), String> {
 
     let devel = matches.get_flag("devel");
     let test_configfile = matches.get_one::<String>("config");
-    ministore::start(devel, test_configfile)?;
+
+    let run_mode = ministore::get_run_mode(devel, test_configfile);
+    ministore::start(run_mode)?;
 
     Ok(())
 }

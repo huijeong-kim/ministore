@@ -1,6 +1,8 @@
 use config::{Config, File};
 use serde::Deserialize;
 
+use crate::RunMode;
+
 #[derive(Debug, Deserialize)]
 pub struct MinistoreConfig {
     pub log: LogConfig,
@@ -19,22 +21,6 @@ pub struct DeviceConfig {
     pub fake_device_type: String,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum RunMode {
-    Development,
-    Production,
-    /// In test mode, configuration file for this test should be provided
-    Test(String),
-}
-impl std::fmt::Display for RunMode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self {
-            RunMode::Development => write!(f, "development"),
-            RunMode::Production => write!(f, "production"),
-            RunMode::Test(_) => write!(f, "Test"),
-        }
-    }
-}
 impl RunMode {
     fn get_config_file(&self) -> &str {
         match self {
