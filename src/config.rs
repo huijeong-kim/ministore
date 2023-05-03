@@ -12,11 +12,11 @@ pub struct LogConfig {
     pub level: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct DeviceConfig {
     pub use_fake: bool,
-    pub list: Vec<String>,
-    pub device_size: Vec<String>,
+    pub fake_device_location: String,
+    pub fake_device_type: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -45,19 +45,11 @@ pub fn get_config(run_mode: &RunMode) -> Result<MinistoreConfig, String> {
 
     let config: MinistoreConfig = config.try_deserialize().map_err(|e| e.to_string())?;
 
-    if config.devices.use_fake == true
-        && config.devices.list.len() != config.devices.device_size.len()
-    {
-        return Err("All fake device size should be provided".to_string());
-    }
-
     Ok(config)
 }
 
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
-
     use super::*;
 
     #[test]
@@ -74,33 +66,5 @@ mod tests {
 
         assert_eq!(config.log.level, "info");
         assert_eq!(config.devices.use_fake, false);
-    }
-
-    #[test]
-    fn configuring_fake_devices_without_size_list_should_fail() {
-        let test_config_str = r#"[log]
-level = "debug"
-
-[devices]
-use_fake = true
-list = [
-    "fake_device_00.bin",
-    "fake_device_01.bin",
-    "fake_device_02.bin",
-]
-device_size = []
-        "#;
-
-        let test_type_name = "configuring_fake_devices_without_size_list_should_fail";
-        let mut file = std::fs::File::create(format!("config/{}.toml", test_type_name))
-            .expect("Failed to create test file");
-        file.write(test_config_str.as_bytes())
-            .expect("Failed to write test config file");
-
-        let config = get_config(&RunMode::Custom(test_type_name.to_string()));
-        assert_eq!(config.is_err(), true);
-
-        std::fs::remove_file(format!("config/{}.toml", test_type_name))
-            .expect("Failed to remove test file");
     }
 }
