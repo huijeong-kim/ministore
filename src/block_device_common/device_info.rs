@@ -1,7 +1,8 @@
 use super::data_type::BLOCK_SIZE;
 use super::BlockDeviceType;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DeviceInfo {
     device_type: BlockDeviceType,
     device_name: String,
