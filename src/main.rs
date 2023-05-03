@@ -5,7 +5,7 @@ fn main() -> Result<(), String> {
 
     let devel = matches.get_flag("devel");
     let test_name = matches.get_one::<String>("test");
-    ministore::start(devel, test_name)?;   
+    ministore::start(devel, test_name)?;
 
     Ok(())
 }

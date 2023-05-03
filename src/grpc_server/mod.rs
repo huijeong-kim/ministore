@@ -16,9 +16,12 @@ pub mod ministore_proto {
     tonic::include_proto!("ministore");
 }
 
-pub async fn start_grpc_server(addr: SocketAddr) -> Result<(), String> {
+pub async fn start_grpc_server(
+    addr: SocketAddr,
+    device_manager: DeviceManager,
+) -> Result<(), String> {
     Server::builder()
-        .add_service(MiniServiceServer::new(GrpcServer::default()))
+        .add_service(MiniServiceServer::new(GrpcServer::new(device_manager)))
         .serve(addr)
         .await
         .map_err(|e| e.to_string())?;
@@ -26,9 +29,16 @@ pub async fn start_grpc_server(addr: SocketAddr) -> Result<(), String> {
     Ok(())
 }
 
-#[derive(Default)]
 pub struct GrpcServer {
     device_manager: Arc<Mutex<DeviceManager>>,
+}
+
+impl GrpcServer {
+    pub fn new(device_manager: DeviceManager) -> Self {
+        Self {
+            device_manager: Arc::new(Mutex::new(device_manager)),
+        }
+    }
 }
 
 fn data_block_into_proto_data(
@@ -223,6 +233,10 @@ mod tests {
 
     use super::*;
 
+    fn test_device_manager() -> DeviceManager {
+        DeviceManager::default()
+    }
+
     /// Be sure to use different port for each test, so that all tests can be executed in parallel.
     #[tokio::test]
     async fn server_should_response_with_ready_when_started() {
@@ -231,7 +245,7 @@ mod tests {
         let addr_for_client = format!("http://{}", addr.clone());
 
         let start_server = tokio::spawn(async move {
-            start_grpc_server(addr_for_server)
+            start_grpc_server(addr_for_server, test_device_manager())
                 .await
                 .expect("Failed to start grpc server");
         });
@@ -260,7 +274,7 @@ mod tests {
         let addr_for_client = format!("http://{}", addr.clone());
 
         let start_server = tokio::spawn(async move {
-            start_grpc_server(addr_for_server)
+            start_grpc_server(addr_for_server, test_device_manager())
                 .await
                 .expect("Failed to start grpc server");
         });
@@ -333,7 +347,7 @@ mod tests {
         let addr_for_client = format!("http://{}", addr.clone());
 
         let start_server = tokio::spawn(async move {
-            start_grpc_server(addr_for_server)
+            start_grpc_server(addr_for_server, test_device_manager())
                 .await
                 .expect("Failed to start grpc server");
         });
@@ -413,7 +427,7 @@ mod tests {
         let addr_for_client = format!("http://{}", addr.clone());
 
         let start_server = tokio::spawn(async move {
-            start_grpc_server(addr_for_server)
+            start_grpc_server(addr_for_server, test_device_manager())
                 .await
                 .expect("Failed to start grpc server");
         });
