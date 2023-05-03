@@ -1,3 +1,5 @@
+use crate::{device_manager::DeviceManager, grpc_server::GrpcServer};
+
 pub mod async_block_device;
 pub mod block_device;
 pub mod block_device_common;
@@ -22,7 +24,26 @@ pub fn start(run_mode: RunMode) -> Result<(), String> {
     println!("config: {:#?}", config);
     println!("environment_variables: {:?}", environment_variables);
 
-    // Do something here..
+    // Instantiate building blocks
+    let device_manager = DeviceManager::new(&config.devices)?;
+    let grpc_server = GrpcServer::new(device_manager);
+    let grpc_server_addr = format!(
+        "{}:{}",
+        environment_variables.server_addr, environment_variables.server_port
+    );
+
+    // Run server
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(4)
+        .enable_all()
+        .build()
+        .expect("Failed to setup tokio runtime");
+
+    runtime.block_on(async move {
+        grpc_server::start_grpc_server(grpc_server_addr.as_str(), grpc_server)
+            .await
+            .expect("Failed to start gRPC server");
+    });
 
     Ok(())
 }
