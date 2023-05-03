@@ -1,4 +1,3 @@
-use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use tonic::transport::Server;
 use tonic::Response;
@@ -16,12 +15,11 @@ pub mod ministore_proto {
     tonic::include_proto!("ministore");
 }
 
-pub async fn start_grpc_server(
-    addr: SocketAddr,
-    device_manager: DeviceManager,
-) -> Result<(), String> {
+pub async fn start_grpc_server(addr: &str, grpc_server: GrpcServer) -> Result<(), String> {
+    let addr = addr.parse().map_err(|e| format!("{:?}", e))?;
+
     Server::builder()
-        .add_service(MiniServiceServer::new(GrpcServer::new(device_manager)))
+        .add_service(MiniServiceServer::new(grpc_server))
         .serve(addr)
         .await
         .map_err(|e| e.to_string())?;
@@ -246,11 +244,11 @@ mod tests {
     #[tokio::test]
     async fn server_should_response_with_ready_when_started() {
         let addr = "127.0.0.1:8080";
-        let addr_for_server = addr.parse().expect("Failed to parse socket addr");
         let addr_for_client = format!("http://{}", addr.clone());
 
         let start_server = tokio::spawn(async move {
-            start_grpc_server(addr_for_server, test_device_manager())
+            let grpc_server = GrpcServer::new(test_device_manager());
+            start_grpc_server(addr, grpc_server)
                 .await
                 .expect("Failed to start grpc server");
         });
@@ -275,11 +273,11 @@ mod tests {
     #[tokio::test]
     async fn server_should_be_able_to_create_and_delete_fake_device() {
         let addr = "127.0.0.1:8081";
-        let addr_for_server = addr.parse().expect("Failed to parse socket addr");
         let addr_for_client = format!("http://{}", addr.clone());
 
         let start_server = tokio::spawn(async move {
-            start_grpc_server(addr_for_server, test_device_manager())
+            let grpc_server = GrpcServer::new(test_device_manager());
+            start_grpc_server(addr, grpc_server)
                 .await
                 .expect("Failed to start grpc server");
         });
@@ -346,11 +344,11 @@ mod tests {
     #[tokio::test]
     async fn server_should_be_able_to_read_write_fake_device() {
         let addr = "127.0.0.1:8082";
-        let addr_for_server = addr.parse().expect("Failed to parse socket addr");
         let addr_for_client = format!("http://{}", addr.clone());
 
         let start_server = tokio::spawn(async move {
-            start_grpc_server(addr_for_server, test_device_manager())
+            let grpc_server = GrpcServer::new(test_device_manager());
+            start_grpc_server(addr, grpc_server)
                 .await
                 .expect("Failed to start grpc server");
         });
@@ -425,11 +423,11 @@ mod tests {
     #[tokio::test]
     async fn server_should_replay_with_error_when_invalid_data_provided_for_write() {
         let addr = "127.0.0.1:8083";
-        let addr_for_server = addr.parse().expect("Failed to parse socket addr");
         let addr_for_client = format!("http://{}", addr.clone());
 
         let start_server = tokio::spawn(async move {
-            start_grpc_server(addr_for_server, test_device_manager())
+            let grpc_server = GrpcServer::new(test_device_manager());
+            start_grpc_server(addr, grpc_server)
                 .await
                 .expect("Failed to start grpc server");
         });
