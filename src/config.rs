@@ -1,4 +1,7 @@
+use std::env;
+
 use config::{Config, File};
+use dotenv::dotenv;
 use serde::Deserialize;
 
 use crate::RunMode;
@@ -40,6 +43,25 @@ pub fn get_config(run_mode: &RunMode) -> Result<MinistoreConfig, String> {
     let config: MinistoreConfig = config.try_deserialize().map_err(|e| e.to_string())?;
 
     Ok(config)
+}
+
+#[derive(Debug)]
+pub struct EnvironmentVariables {
+    pub server_addr: String,
+    pub server_port: String,
+}
+pub fn get_environment_values() -> EnvironmentVariables {
+    dotenv().ok();
+
+    let server_addr =
+        env::var("MINISTORE_SERVER_ADDR").expect("MINISTORE_SERVER_ADDR should be set");
+    let server_port =
+        env::var("MINISTORE_SERVER_PORT").expect("MINISTORE_SERVER_PORT should be set");
+
+    EnvironmentVariables {
+        server_addr,
+        server_port,
+    }
 }
 
 #[cfg(test)]

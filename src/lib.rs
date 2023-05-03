@@ -16,9 +16,11 @@ pub enum RunMode {
 
 pub fn start(run_mode: RunMode) -> Result<(), String> {
     let config = config::get_config(&run_mode)?;
+    let environment_variables = config::get_environment_values();
 
     println!("run_mode: {:?}", run_mode);
     println!("config: {:#?}", config);
+    println!("environment_variables: {:?}", environment_variables);
 
     // Do something here..
 
