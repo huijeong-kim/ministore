@@ -296,4 +296,33 @@ mod tests {
             std::fs::remove_file(&device_name).expect("Failed to remove test file");
         });
     }
+
+    #[test]
+    fn device_should_be_able_to_provide_device_info_after_load() {
+        for_each_block_device_type(|device_type| {
+            let device_name = "device_should_be_able_to_provide_device_info_after_load".to_string();
+
+            {
+                let mut device = create_block_device(
+                    device_type.clone(),
+                    device_name.clone(),
+                    BLOCK_SIZE as u64 * 1024,
+                )
+                .expect("Failed to create block device");
+
+                device.flush().expect("Failed to flush data");
+            }
+
+            {
+                let mut device = create_block_device(device_type.clone(), device_name.clone(), 0)
+                    .expect("Failed to load a device");
+                device.load().expect("Failed to load data");
+
+                assert_eq!(device.info().name(), &device_name);
+                assert_eq!(device.info().device_size(), BLOCK_SIZE as u64 * 1024);
+            }
+
+            std::fs::remove_file(&device_name).expect("Failed to remove test file");
+        });
+    }
 }

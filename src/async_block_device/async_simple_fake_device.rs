@@ -21,6 +21,7 @@ impl Data {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct AsyncSimpleFakeDevice {
     device_info: DeviceInfo,
     data: Data,
@@ -116,9 +117,15 @@ impl AsyncSimpleFakeDevice {
         }
 
         let data = tokio::fs::read(path).await.map_err(|e| e.to_string())?;
-        let data = bincode::deserialize_from(data.as_slice()).map_err(|e| e.to_string())?;
+        let loaded_data: AsyncSimpleFakeDevice =
+            bincode::deserialize_from(data.as_slice()).map_err(|e| e.to_string())?;
 
-        self.data = data;
+        if loaded_data.device_info.device_type() != BlockDeviceType::AsyncSimpleFakeDevice {
+            return Err("Loaded device file type is invalid".to_string());
+        }
+
+        self.device_info = loaded_data.device_info;
+        self.data = loaded_data.data;
 
         Ok(())
     }
@@ -134,7 +141,7 @@ impl AsyncSimpleFakeDevice {
             .await
             .map_err(|e| e.to_string())?;
 
-        let data = bincode::serialize(&self.data).map_err(|e| e.to_string())?;
+        let data = bincode::serialize(&self).map_err(|e| e.to_string())?;
         file.write_all(data.as_slice())
             .await
             .map_err(|e| e.to_string())?;
@@ -386,5 +393,40 @@ mod tests {
         tokio::fs::remove_file(device_name)
             .await
             .expect("Failed to remove file");
+    }
+
+    #[tokio::test]
+    async fn async_device_should_be_able_to_provide_device_info_after_load() {
+        let device_name =
+            "async_device_should_be_able_to_provide_device_info_after_load".to_string();
+
+        {
+            let mut device = AsyncSimpleFakeDevice::new(
+                BlockDeviceType::AsyncSimpleFakeDevice,
+                device_name.clone(),
+                BLOCK_SIZE as u64 * 1024,
+            )
+            .await
+            .expect("Failed to create block device");
+
+            device.flush().await.expect("Failed to flush data");
+        }
+
+        {
+            let mut device = AsyncSimpleFakeDevice::new(
+                BlockDeviceType::AsyncSimpleFakeDevice,
+                device_name.clone(),
+                0,
+            )
+            .await
+            .expect("Failed to load a device");
+
+            device.load().await.expect("Failed to load data");
+
+            assert_eq!(device.info().name(), &device_name);
+            assert_eq!(device.info().device_size(), BLOCK_SIZE as u64 * 1024);
+        }
+
+        std::fs::remove_file(&device_name).expect("Failed to remove test file");
     }
 }

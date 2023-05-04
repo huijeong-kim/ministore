@@ -1,9 +1,10 @@
 pub mod data_type;
 pub mod device_info;
 
+use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter};
 
-#[derive(Debug, EnumIter, Clone, Display, PartialEq)]
+#[derive(Debug, EnumIter, Clone, Display, PartialEq, Serialize, Deserialize)]
 pub enum BlockDeviceType {
     SimpleFakeDevice,
     IoUringFakeDevice,

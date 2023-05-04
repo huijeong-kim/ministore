@@ -1,6 +1,6 @@
+use super::{BlockDevice, BlockDeviceType};
 use crate::block_device_common::data_type::{DataBlock, UNMAP_BLOCK};
 use crate::block_device_common::device_info::DeviceInfo;
-use super::{BlockDeviceType, BlockDevice};
 
 use serde::{Deserialize, Serialize};
 use std::{fs::OpenOptions, path::Path};
@@ -18,6 +18,7 @@ impl Data {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct SimpleFakeDevice {
     device_info: DeviceInfo,
     data: Data,
@@ -106,8 +107,15 @@ impl BlockDevice for SimpleFakeDevice {
             .open(&path)
             .map_err(|e| e.to_string())?;
 
-        let loaded_data = bincode::deserialize_from(&mut file).map_err(|e| e.to_string())?;
-        self.data = loaded_data;
+        let loaded_data: SimpleFakeDevice =
+            bincode::deserialize_from(&mut file).map_err(|e| e.to_string())?;
+
+        if loaded_data.device_info.device_type() != BlockDeviceType::SimpleFakeDevice {
+            return Err("Loaded device file type is invalid".to_string());
+        }
+
+        self.device_info = loaded_data.device_info;
+        self.data = loaded_data.data;
 
         Ok(())
     }
@@ -124,7 +132,7 @@ impl BlockDevice for SimpleFakeDevice {
             .open(&path)
             .map_err(|e| e.to_string())?;
 
-        bincode::serialize_into(&mut file, &self.data).map_err(|e| e.to_string())?;
+        bincode::serialize_into(&mut file, &self).map_err(|e| e.to_string())?;
 
         Ok(())
     }
