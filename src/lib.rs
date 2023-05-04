@@ -1,3 +1,4 @@
+use crate::config::{EnvironmentVariables, MinistoreConfig};
 use crate::{device_manager::DeviceManager, grpc_server::GrpcServer};
 
 pub mod async_block_device;
@@ -8,29 +9,11 @@ pub mod device_manager;
 pub mod grpc_server;
 pub mod utils;
 
-#[derive(Debug, PartialEq)]
-pub enum RunMode {
-    Development,
-    Production,
-    /// In test mode, configuration file for this test should be provided
-    Test(String),
-}
-
-pub fn start(run_mode: RunMode) -> Result<(), String> {
-    let config = config::get_config(&run_mode)?;
-    let environment_variables = config::get_environment_values();
-
-    println!("run_mode: {:?}", run_mode);
-    println!("config: {:#?}", config);
-    println!("environment_variables: {:?}", environment_variables);
-
+pub fn start(configs: (MinistoreConfig, EnvironmentVariables)) -> Result<(), String> {
     // Instantiate building blocks
-    let device_manager = DeviceManager::new(&config.devices)?;
+    let device_manager = DeviceManager::new(&configs.0.devices)?;
     let grpc_server = GrpcServer::new(device_manager);
-    let grpc_server_addr = format!(
-        "{}:{}",
-        environment_variables.server_addr, environment_variables.server_port
-    );
+    let grpc_server_addr = format!("{}:{}", configs.1.server_addr, configs.1.server_port);
 
     // Run server
     let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -48,32 +31,6 @@ pub fn start(run_mode: RunMode) -> Result<(), String> {
     Ok(())
 }
 
-pub fn get_run_mode(devel: bool, test_name: Option<&String>) -> RunMode {
-    if test_name.is_some() {
-        RunMode::Test(test_name.unwrap().clone())
-    } else if devel == true {
-        RunMode::Development
-    } else {
-        RunMode::Production
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn ministore_should_run_with_development_mode_when_devel_set_true() {
-        let run_mode = get_run_mode(true, None);
-
-        assert_eq!(run_mode, RunMode::Development);
-    }
-
-    #[test]
-    fn ministore_should_run_with_test_mode_when_test_name_provided() {
-        let test_config = "config/production.toml".to_string(); // temporally use exisiting config file name
-        let run_mode = get_run_mode(false, Some(&test_config));
-
-        assert_eq!(run_mode, RunMode::Test(test_config));
-    }
+pub fn get_config(config_str: &str) -> Result<MinistoreConfig, String> {
+    config::get_config(config_str)
 }
