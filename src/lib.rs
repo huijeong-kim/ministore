@@ -1,4 +1,4 @@
-use crate::config::{EnvironmentVariables, MinistoreConfig};
+use crate::config::EnvironmentVariables;
 use crate::{device_manager::DeviceManager, grpc_server::GrpcServer};
 
 pub mod async_block_device;
@@ -9,9 +9,10 @@ pub mod device_manager;
 pub mod grpc_server;
 pub mod utils;
 
-pub fn start(configs: (MinistoreConfig, EnvironmentVariables)) -> Result<(), String> {
+pub fn start(configs: (&str, EnvironmentVariables)) -> Result<(), String> {
     // Instantiate building blocks
-    let device_manager = DeviceManager::new(&configs.0.devices)?;
+    let config = config::get_config(configs.0)?;
+    let device_manager = DeviceManager::new(&config.devices)?;
     let grpc_server = GrpcServer::new(device_manager);
     let grpc_server_addr = format!("{}:{}", configs.1.server_addr, configs.1.server_port);
 
@@ -29,8 +30,4 @@ pub fn start(configs: (MinistoreConfig, EnvironmentVariables)) -> Result<(), Str
     });
 
     Ok(())
-}
-
-pub fn get_config(config_str: &str) -> Result<MinistoreConfig, String> {
-    config::get_config(config_str)
 }

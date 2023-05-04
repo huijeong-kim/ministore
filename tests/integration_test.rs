@@ -1,6 +1,6 @@
 use ministore::{
     self,
-    config::{DeviceConfig, EnvironmentVariables, LogConfig, MinistoreConfig},
+    config::EnvironmentVariables,
     grpc_server::ministore_proto::{
         self, mini_service_client::MiniServiceClient, CreateFakeDeviceRequest,
         DeleteFakeDeviceRequest, ListFakeDevicesRequest, ReadRequest, WriteRequest,
@@ -12,16 +12,15 @@ use ministore::{
 #[test]
 fn test_simple_io_flow_using_simple_fake_devices() {
     // Prepare configuration for test
-    let ministore_config = MinistoreConfig {
-        log: LogConfig {
-            level: "debug".to_string(),
-        },
-        devices: DeviceConfig {
-            use_fake: true,
-            fake_device_location: "test_simple_io_flow_using_simple_fake_devices".to_string(),
-            fake_device_type: "SimpleFake".to_string(),
-        },
-    };
+    let ministore_config = r#"[log]
+    level = "debug"
+
+[devices]
+    use_fake = true
+    fake_device_location = "test_simple_io_flow_using_simple_fake_devices"
+    fake_device_type = "SimpleFake"
+        "#;
+
     let environment_variables = EnvironmentVariables {
         server_addr: "127.0.0.1".to_string(),
         server_port: "8100".to_string(),
