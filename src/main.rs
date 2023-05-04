@@ -12,17 +12,16 @@ fn main() -> Result<(), String> {
     // Find run_mode and its config file
     let run_mode = get_run_mode(devel, test_configfile);
     let config_str = run_mode.get_config_str()?;
-    let config = ministore::get_config(config_str.as_str())?;
 
     // Read envrionment variables
     let environment_variables = get_environment_values();
 
     println!("run_mode: {:?}", run_mode);
-    println!("config: {:#?}", config);
+    println!("config: {:#?}", config_str);
     println!("environment_variables: {:?}", environment_variables);
 
     // Start ministore
-    ministore::start((config, environment_variables))?;
+    ministore::start((config_str.as_str(), environment_variables))?;
 
     Ok(())
 }
