@@ -1,56 +1,40 @@
-use std::{io::Write, path::PathBuf};
-
-use dotenv::dotenv;
 use ministore::{
     self,
+    config::{DeviceConfig, EnvironmentVariables, LogConfig, MinistoreConfig},
     grpc_server::ministore_proto::{
         self, mini_service_client::MiniServiceClient, CreateFakeDeviceRequest,
         DeleteFakeDeviceRequest, ListFakeDevicesRequest, ReadRequest, WriteRequest,
     },
 };
 
-fn setup_config_file(config_file: &PathBuf, config_str: &str) {
-    let mut file = std::fs::File::create(config_file).unwrap();
-    file.write(config_str.as_bytes()).unwrap();
-}
-fn teardown_config_file(config_file: &PathBuf) {
-    std::fs::remove_file(config_file).unwrap();
-}
-
-fn get_ministore_addr() -> (String, String) {
-    dotenv().ok();
-    let addr = std::env::var("MINISTORE_SERVER_ADDR").unwrap();
-    let port = std::env::var("MINISTORE_SERVER_PORT").unwrap();
-
-    (addr, port)
-}
+/// We will use 127.0.0.1:81** for gRPC server address of integration tests
 
 #[test]
 fn test_simple_io_flow_using_simple_fake_devices() {
     // Prepare configuration for test
-    let test_config_str = r#"[log]
-    level = "debug"
-
-    [devices]
-    use_fake = true
-    fake_device_location = "test_simple_io_flow_using_simple_fake_devices"
-    fake_device_type = "SimpleFake"
-        "#;
-    let config_file = PathBuf::from("test_simple_io_flow_using_simple_fake_devices.toml");
-    let config_file_as_string = config_file.clone().into_os_string().into_string().unwrap();
-    setup_config_file(&config_file, test_config_str);
+    let ministore_config = MinistoreConfig {
+        log: LogConfig {
+            level: "debug".to_string(),
+        },
+        devices: DeviceConfig {
+            use_fake: true,
+            fake_device_location: "test_simple_io_flow_using_simple_fake_devices".to_string(),
+            fake_device_type: "SimpleFake".to_string(),
+        },
+    };
+    let environment_variables = EnvironmentVariables {
+        server_addr: "127.0.0.1".to_string(),
+        server_port: "8100".to_string(),
+    };
 
     // Start ministore
-    let _thread = std::thread::spawn(|| {
-        let run_mode: ministore::RunMode = ministore::RunMode::Test(config_file_as_string);
-        ministore::start(run_mode).unwrap();
+    let _thread = std::thread::spawn(move || {
+        ministore::start((ministore_config, environment_variables)).unwrap();
     });
 
     // Start test here
-    let (addr, port) = get_ministore_addr();
-
     tokio::runtime::Runtime::new().unwrap().block_on(async {
-        let addr = format!("http://{}:{}", addr, port);
+        let addr = "http://127.0.0.1:8100";
 
         let mut client = loop {
             if let Ok(client) = MiniServiceClient::connect(addr.clone()).await {
@@ -129,5 +113,4 @@ fn test_simple_io_flow_using_simple_fake_devices() {
 
     // cleanup teardown directory and config file
     std::fs::remove_dir("test_simple_io_flow_using_simple_fake_devices").unwrap();
-    teardown_config_file(&config_file);
 }

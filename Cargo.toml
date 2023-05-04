@@ -16,6 +16,7 @@ tokio = { version = "1.27.0", features = ["fs", "rt-multi-thread"] }
 strum = "0.24.1"
 strum_macros = "0.24.3"
 dotenv = "0.15.0"
+toml = "0.7.3"
 
 [build-dependencies]
 tonic-build = "0.8.4"
