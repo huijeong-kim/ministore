@@ -1,13 +1,14 @@
 pub mod data_type;
 pub mod device_info;
 
+use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter};
 
-#[derive(Debug, EnumIter, Clone, Display, PartialEq)]
+#[derive(Debug, EnumIter, Clone, Display, PartialEq, Serialize, Deserialize)]
 pub enum BlockDeviceType {
     SimpleFakeDevice,
-    // IoUringFakeDevice,
     AsyncSimpleFakeDevice,
+    // IoUringFakeDevice,
 }
 
 impl BlockDeviceType {
@@ -23,37 +24,29 @@ impl BlockDeviceType {
     }
 }
 
-pub fn i32_to_block_device_type(value: i32) -> Result<BlockDeviceType, String> {
+pub fn str_to_block_device_type(value: &str) -> Result<BlockDeviceType, String> {
     match value {
-        0 => Ok(BlockDeviceType::SimpleFakeDevice),
-        2 => Ok(BlockDeviceType::AsyncSimpleFakeDevice),
-        _ => Err(format!("Wrong device type, type={}", value)),
-    }
-}
-
-impl From<BlockDeviceType> for i32 {
-    fn from(value: BlockDeviceType) -> Self {
-        match value {
-            BlockDeviceType::SimpleFakeDevice => 0,
-            BlockDeviceType::AsyncSimpleFakeDevice => 2,
-        }
+        "SimpleFake" => Ok(BlockDeviceType::SimpleFakeDevice),
+        "AsyncSimpleFake" => Ok(BlockDeviceType::AsyncSimpleFakeDevice),
+        _ => Err(format!("Invalid block device type, type={}", value)),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use strum::IntoEnumIterator;
 
+    // This test should be updated whenever you add new type
     #[test]
-    fn all_block_device_type_should_be_converted_from_or_into_i32() {
-        let mut type_num: i32 = 0;
-        for device_type in BlockDeviceType::iter() {
-            assert_eq!(device_type, i32_to_block_device_type(type_num).unwrap());
-            assert_eq!(i32::from(device_type), type_num);
-
-            type_num += 1;
-        }
+    fn all_block_device_type_should_be_converted_from_str() {
+        assert_eq!(
+            str_to_block_device_type("SimpleFake"),
+            Ok(BlockDeviceType::SimpleFakeDevice)
+        );
+        assert_eq!(
+            str_to_block_device_type("AsyncSimpleFake"),
+            Ok(BlockDeviceType::AsyncSimpleFakeDevice)
+        );
     }
 
     #[test]

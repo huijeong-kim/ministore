@@ -6,5 +6,5 @@ level = "debug"
 
 [devices]
 use_fake = false
-list = []
-device_size = []
+fake_device_location = "."
+fake_device_type=""

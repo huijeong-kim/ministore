@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::PathBuf;
 
 use crate::block_device_common::{
     data_type::{DataBlock, UNMAP_BLOCK},
@@ -7,14 +7,14 @@ use crate::block_device_common::{
 };
 use tokio::{fs, io::AsyncWriteExt};
 
-pub struct AsyncSimpleFakeDevice {
-}
+pub struct AsyncSimpleFakeDevice {}
 
 impl AsyncSimpleFakeDevice {
     pub async fn new(
         device_type: BlockDeviceType,
         name: String,
         size: u64,
+        filepath: PathBuf,
     ) -> Result<Self, String> {
         todo!()
     }
@@ -47,10 +47,9 @@ impl AsyncSimpleFakeDevice {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        async_block_device::async_simple_fake_device::AsyncSimpleFakeDevice,
-        block_device_common::{data_type::*, BlockDeviceType},
-    };
+    use super::*;
+
+    use crate::block_device_common::{data_type::*, BlockDeviceType};
     use std::path::Path;
 
     #[tokio::test]
@@ -59,6 +58,7 @@ mod tests {
             BlockDeviceType::AsyncSimpleFakeDevice,
             "create_async_block_device_with_unaligned_size_should_fail".to_string(),
             1000000,
+            PathBuf::from("."),
         )
         .await;
 
@@ -71,6 +71,7 @@ mod tests {
             BlockDeviceType::SimpleFakeDevice,
             "create_async_block_device_with_wrong_type_should_fail".to_string(),
             1000000,
+            PathBuf::from("."),
         )
         .await;
 
@@ -84,6 +85,7 @@ mod tests {
             BlockDeviceType::AsyncSimpleFakeDevice,
             device_name.clone(),
             BLOCK_SIZE as u64 * 1000,
+            PathBuf::from("."),
         )
         .await
         .expect("Failed to create a device, type={}");
@@ -101,6 +103,7 @@ mod tests {
             BlockDeviceType::AsyncSimpleFakeDevice,
             device_name.clone(),
             BLOCK_SIZE as u64 * 1000,
+            PathBuf::from("."),
         )
         .await
         .expect("Failed to create a device");
@@ -123,6 +126,7 @@ mod tests {
             BlockDeviceType::AsyncSimpleFakeDevice,
             device_name.clone(),
             BLOCK_SIZE as u64 * 1024,
+            PathBuf::from("."),
         )
         .await
         .expect("Failed to create fake device");
@@ -158,6 +162,7 @@ mod tests {
             BlockDeviceType::AsyncSimpleFakeDevice,
             device_name.clone(),
             BLOCK_SIZE as u64 * 1024,
+            PathBuf::from("."),
         )
         .await
         .expect("Failed to create fake device");
@@ -178,6 +183,7 @@ mod tests {
             BlockDeviceType::AsyncSimpleFakeDevice,
             device_name.clone(),
             BLOCK_SIZE as u64 * 1024,
+            PathBuf::from("."),
         )
         .await
         .expect("Failed to create fake device");
@@ -200,6 +206,7 @@ mod tests {
             BlockDeviceType::AsyncSimpleFakeDevice,
             device_name.clone(),
             BLOCK_SIZE as u64 * 1024,
+            PathBuf::from("."),
         )
         .await
         .expect("Failed to create fake device");
@@ -219,6 +226,7 @@ mod tests {
             BlockDeviceType::AsyncSimpleFakeDevice,
             device_name.clone(),
             BLOCK_SIZE as u64 * 1024,
+            PathBuf::from("."),
         )
         .await
         .expect("Failed to create fake device");
@@ -242,6 +250,7 @@ mod tests {
                 BlockDeviceType::AsyncSimpleFakeDevice,
                 device_name.clone(),
                 BLOCK_SIZE as u64 * 1024,
+                PathBuf::from("."),
             )
             .await
             .expect("Failed to create block device");
@@ -268,6 +277,7 @@ mod tests {
                 BlockDeviceType::AsyncSimpleFakeDevice,
                 device_name.clone(),
                 BLOCK_SIZE as u64 * 1024,
+                PathBuf::from("."),
             )
             .await
             .expect("Failed to create block device");
@@ -288,5 +298,42 @@ mod tests {
         tokio::fs::remove_file(device_name)
             .await
             .expect("Failed to remove file");
+    }
+
+    #[tokio::test]
+    async fn async_device_should_be_able_to_provide_device_info_after_load() {
+        let device_name =
+            "async_device_should_be_able_to_provide_device_info_after_load".to_string();
+
+        {
+            let mut device = AsyncSimpleFakeDevice::new(
+                BlockDeviceType::AsyncSimpleFakeDevice,
+                device_name.clone(),
+                BLOCK_SIZE as u64 * 1024,
+                PathBuf::from("."),
+            )
+            .await
+            .expect("Failed to create block device");
+
+            device.flush().await.expect("Failed to flush data");
+        }
+
+        {
+            let mut device = AsyncSimpleFakeDevice::new(
+                BlockDeviceType::AsyncSimpleFakeDevice,
+                device_name.clone(),
+                0,
+                PathBuf::from("."),
+            )
+            .await
+            .expect("Failed to load a device");
+
+            device.load().await.expect("Failed to load data");
+
+            assert_eq!(device.info().name(), &device_name);
+            assert_eq!(device.info().device_size(), BLOCK_SIZE as u64 * 1024);
+        }
+
+        std::fs::remove_file(&device_name).expect("Failed to remove test file");
     }
 }

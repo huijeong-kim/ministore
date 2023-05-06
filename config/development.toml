@@ -3,13 +3,5 @@ level = "debug"
 
 [devices]
 use_fake = true
-list = [
-    "fake_device_00.bin",
-    "fake_device_01.bin",
-    "fake_device_02.bin",
-]
-device_size = [
-    "1M",
-    "1M",
-    "1M",
-]
+fake_device_location = "fakes"
+fake_device_type = "SimpleFake"

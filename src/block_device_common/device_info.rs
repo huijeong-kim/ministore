@@ -1,9 +1,9 @@
 use super::data_type::BLOCK_SIZE;
 use super::BlockDeviceType;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug)]
-pub struct DeviceInfo {
-}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct DeviceInfo {}
 
 impl DeviceInfo {
     pub fn new(

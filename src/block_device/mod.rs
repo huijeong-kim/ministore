@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::block_device_common::data_type::DataBlock;
 use crate::block_device_common::device_info::DeviceInfo;
 use crate::block_device_common::BlockDeviceType;
@@ -19,10 +21,11 @@ pub fn create_block_device(
     device_type: BlockDeviceType,
     name: String,
     size: u64,
+    filepath: PathBuf,
 ) -> Result<Box<dyn BlockDevice>, String> {
     match device_type {
         BlockDeviceType::SimpleFakeDevice => {
-            let fake = SimpleFakeDevice::new(name, size)?;
+            let fake = SimpleFakeDevice::new(name, size, filepath)?;
             Ok(Box::new(fake))
         }
         BlockDeviceType::AsyncSimpleFakeDevice => {
@@ -32,12 +35,20 @@ pub fn create_block_device(
 }
 
 #[cfg(target_os = "linux")]
-fn create_io_uring_fake_device(name: String, size: u64) -> Result<Box<dyn BlockDevice>, String> {
+fn create_io_uring_fake_device(
+    name: String,
+    size: u64,
+    _filepath: PathBuf,
+) -> Result<Box<dyn BlockDevice>, String> {
     let device = io_uring_fake_device::IoUringFakeDevice::new(name, size)?;
     Ok(Box::new(device))
 }
 #[cfg(not(target_os = "linux"))]
-fn create_io_uring_fake_device(_name: String, _size: u64) -> Result<Box<dyn BlockDevice>, String> {
+fn create_io_uring_fake_device(
+    _name: String,
+    _size: u64,
+    _filepath: PathBuf,
+) -> Result<Box<dyn BlockDevice>, String> {
     Err("Cannot create io uring fake device".to_string())
 }
 
@@ -105,6 +116,7 @@ mod tests {
                 device_type,
                 "block_device_should_provide_correct_device_info".to_string(),
                 1000000,
+                PathBuf::from("."),
             );
 
             assert!(device.is_err() == true);
@@ -119,6 +131,7 @@ mod tests {
                 device_type.clone(),
                 device_name.clone(),
                 BLOCK_SIZE as u64 * 1000,
+                PathBuf::from("."),
             )
             .expect(&format!("Failed to create a device, type={}", device_type));
 
@@ -135,6 +148,7 @@ mod tests {
                 device_type.clone(),
                 device_name.clone(),
                 BLOCK_SIZE as u64 * 1000,
+                PathBuf::from("."),
             )
             .expect(&format!("Failed to create a device, type={}", device_type));
 
@@ -152,9 +166,13 @@ mod tests {
     fn write_and_read_should_success() {
         for_each_block_device_type(|device_type| {
             let device_name = "write_and_read_should_success".to_string();
-            let mut device =
-                create_block_device(device_type, device_name.clone(), BLOCK_SIZE as u64 * 1024)
-                    .expect("Failed to create fake device");
+            let mut device = create_block_device(
+                device_type,
+                device_name.clone(),
+                BLOCK_SIZE as u64 * 1024,
+                PathBuf::from("."),
+            )
+            .expect("Failed to create fake device");
 
             let lba = 10;
             let num_blocks = 5;
@@ -182,9 +200,13 @@ mod tests {
     fn write_with_invalid_lba_range_should_fail() {
         for_each_block_device_type(|device_type| {
             let device_name = "write_with_invalid_lba_range_should_fail".to_string();
-            let mut device =
-                create_block_device(device_type, device_name.clone(), BLOCK_SIZE as u64 * 1024)
-                    .expect("Failed to create fake device");
+            let mut device = create_block_device(
+                device_type,
+                device_name.clone(),
+                BLOCK_SIZE as u64 * 1024,
+                PathBuf::from("."),
+            )
+            .expect("Failed to create fake device");
 
             let buffer = Vec::new();
             assert_eq!(device.write(0, 2000, buffer.clone()).is_err(), true);
@@ -198,9 +220,13 @@ mod tests {
     fn write_should_fail_when_not_enough_buffer_is_provided() {
         for_each_block_device_type(|device_type| {
             let device_name = "write_should_fail_when_not_enough_buffer_is_provided".to_string();
-            let mut device =
-                create_block_device(device_type, device_name.clone(), BLOCK_SIZE as u64 * 1024)
-                    .expect("Failed to create fake device");
+            let mut device = create_block_device(
+                device_type,
+                device_name.clone(),
+                BLOCK_SIZE as u64 * 1024,
+                PathBuf::from("."),
+            )
+            .expect("Failed to create fake device");
 
             let mut buffer = Vec::new();
             for offset in 0..5 {
@@ -216,9 +242,13 @@ mod tests {
     fn read_with_invalid_lba_range_should_fail() {
         for_each_block_device_type(|device_type| {
             let device_name = "read_with_invalid_lba_range_should_fail".to_string();
-            let mut device =
-                create_block_device(device_type, device_name.clone(), BLOCK_SIZE as u64 * 1024)
-                    .expect("Failed to create fake device");
+            let mut device = create_block_device(
+                device_type,
+                device_name.clone(),
+                BLOCK_SIZE as u64 * 1024,
+                PathBuf::from("."),
+            )
+            .expect("Failed to create fake device");
 
             assert_eq!(device.read(0, 2000).is_err(), true);
             assert_eq!(device.read(0, 0).is_err(), true);
@@ -231,9 +261,13 @@ mod tests {
     fn reading_unwritten_lbas_should_return_unmap_data() {
         for_each_block_device_type(|device_type| {
             let device_name = "reading_unwritten_lbas_should_return_unmap_data".to_string();
-            let mut device =
-                create_block_device(device_type, device_name.clone(), BLOCK_SIZE as u64 * 1024)
-                    .expect("Failed to create fake device");
+            let mut device = create_block_device(
+                device_type,
+                device_name.clone(),
+                BLOCK_SIZE as u64 * 1024,
+                PathBuf::from("."),
+            )
+            .expect("Failed to create fake device");
 
             let read_data = device.read(0, 1).expect("Failed to read data");
             assert_eq!(read_data.len(), 1);
@@ -254,6 +288,7 @@ mod tests {
                     device_type.clone(),
                     device_name.clone(),
                     BLOCK_SIZE as u64 * 1024,
+                    PathBuf::from("."),
                 )
                 .expect("Failed to create block device");
 
@@ -274,9 +309,13 @@ mod tests {
 
             // Load data and verify
             {
-                let mut device =
-                    create_block_device(device_type, device_name.clone(), BLOCK_SIZE as u64 * 1024)
-                        .expect("Failed to create block device");
+                let mut device = create_block_device(
+                    device_type,
+                    device_name.clone(),
+                    BLOCK_SIZE as u64 * 1024,
+                    PathBuf::from("."),
+                )
+                .expect("Failed to create block device");
 
                 device.load().expect("Failed to load data");
 
@@ -289,6 +328,41 @@ mod tests {
                         DataBlock([0xC; BLOCK_SIZE])
                     ]
                 );
+            }
+
+            std::fs::remove_file(&device_name).expect("Failed to remove test file");
+        });
+    }
+
+    #[test]
+    fn device_should_be_able_to_provide_device_info_after_load() {
+        for_each_block_device_type(|device_type| {
+            let device_name = "device_should_be_able_to_provide_device_info_after_load".to_string();
+
+            {
+                let mut device = create_block_device(
+                    device_type.clone(),
+                    device_name.clone(),
+                    BLOCK_SIZE as u64 * 1024,
+                    PathBuf::from("."),
+                )
+                .expect("Failed to create block device");
+
+                device.flush().expect("Failed to flush data");
+            }
+
+            {
+                let mut device = create_block_device(
+                    device_type.clone(),
+                    device_name.clone(),
+                    0,
+                    PathBuf::from("."),
+                )
+                .expect("Failed to load a device");
+                device.load().expect("Failed to load data");
+
+                assert_eq!(device.info().name(), &device_name);
+                assert_eq!(device.info().device_size(), BLOCK_SIZE as u64 * 1024);
             }
 
             std::fs::remove_file(&device_name).expect("Failed to remove test file");

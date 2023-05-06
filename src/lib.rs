@@ -1,3 +1,6 @@
+use crate::config::EnvironmentVariables;
+use crate::{device_manager::DeviceManager, grpc_server::GrpcServer};
+
 pub mod async_block_device;
 pub mod block_device;
 pub mod block_device_common;
@@ -6,30 +9,11 @@ pub mod device_manager;
 pub mod grpc_server;
 pub mod utils;
 
-use self::config::RunMode;
-
-pub fn start(devel: bool, test_name: Option<&String>) -> Result<RunMode, String> {
+pub fn start(configs: (&str, EnvironmentVariables)) -> Result<(), String> {
     todo!()
-}
 
-#[cfg(test)]
-mod test {
-    use super::*;
+    // Instantiate building blocks
 
-    #[test]
-    fn ministore_should_run_with_development_mode_when_devel_set_true() {
-        let result = start(true, None);
+    // Run server
 
-        assert_eq!(result.is_ok(), true);
-        assert_eq!(result.unwrap(), RunMode::Development);
-    }
-
-    #[test]
-    fn ministore_should_run_with_test_mode_when_test_name_provided() {
-        let test_name = "production".to_string(); // temporally use exisiting config file name
-        let result = start(false, Some(&test_name));
-
-        assert_eq!(result.is_ok(), true);
-        assert_eq!(result.unwrap(), RunMode::Custom(test_name));
-    }
 }
