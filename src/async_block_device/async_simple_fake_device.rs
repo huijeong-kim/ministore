@@ -164,7 +164,10 @@ mod tests {
     use crate::block_device_common::{data_type::*, BlockDeviceType};
     use std::path::Path;
 
+    use tracing_test::traced_test;
+
     #[tokio::test]
+    #[traced_test]
     async fn create_async_block_device_with_unaligned_size_should_fail() {
         let device = AsyncSimpleFakeDevice::new(
             BlockDeviceType::AsyncSimpleFakeDevice,
@@ -178,6 +181,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn create_async_block_device_with_wrong_type_should_fail() {
         let device = AsyncSimpleFakeDevice::new(
             BlockDeviceType::SimpleFakeDevice,
@@ -191,6 +195,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn async_block_device_should_create_file() {
         let device_name = "async_block_device_should_create_file".to_string();
         let _device = AsyncSimpleFakeDevice::new(
@@ -209,6 +214,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn async_block_device_should_provide_correct_device_info() {
         let device_name = "async_block_device_should_provide_correct_device_info".to_string();
         let device = AsyncSimpleFakeDevice::new(
@@ -232,6 +238,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn write_and_read_async_should_success() {
         let device_name = "write_and_read_async_should_success".to_string();
         let mut device = AsyncSimpleFakeDevice::new(
@@ -268,6 +275,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn write_with_invalid_lba_range_async_should_fail() {
         let device_name = "write_with_invalid_lba_range_async_should_fail".to_string();
         let mut device = AsyncSimpleFakeDevice::new(
@@ -289,6 +297,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn write_async_should_fail_when_not_enough_buffer_is_provided() {
         let device_name = "write_async_should_fail_when_not_enough_buffer_is_provided".to_string();
         let mut device = AsyncSimpleFakeDevice::new(
@@ -332,6 +341,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn reading_unwritten_lbas_async_should_return_unmap_data() {
         let device_name = "reading_unwritten_lbas_async_should_return_unmap_data".to_string();
         let mut device = AsyncSimpleFakeDevice::new(
@@ -353,6 +363,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn flush_and_load_async_should_success() {
         let device_name = "flush_and_load_async_should_success".to_string();
 
@@ -413,6 +424,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn async_device_should_be_able_to_provide_device_info_after_load() {
         let device_name =
             "async_device_should_be_able_to_provide_device_info_after_load".to_string();

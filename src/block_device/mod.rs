@@ -60,6 +60,7 @@ mod tests {
     use super::*;
     use crate::block_device_common::data_type::*;
     use strum::IntoEnumIterator;
+    use tracing_test::traced_test;
 
     #[cfg(target_os = "linux")]
     fn translate_device_type(device_type: BlockDeviceType) -> BlockDeviceType {
@@ -111,6 +112,7 @@ mod tests {
         Ok(())
     }
 
+    #[traced_test]
     #[test]
     fn create_block_device_with_unaligned_size_should_fail() {
         for_each_block_device_type(|device_type| {
@@ -125,6 +127,7 @@ mod tests {
         });
     }
 
+    #[traced_test]
     #[test]
     fn block_device_should_create_file() {
         for_each_block_device_type(|device_type| {
@@ -142,6 +145,7 @@ mod tests {
         })
     }
 
+    #[traced_test]
     #[test]
     fn block_device_should_provide_correct_device_info() {
         for_each_block_device_type(|device_type| {
@@ -164,6 +168,7 @@ mod tests {
         });
     }
 
+    #[traced_test]
     #[test]
     fn write_and_read_should_success() {
         for_each_block_device_type(|device_type| {
@@ -198,6 +203,7 @@ mod tests {
         });
     }
 
+    #[traced_test]
     #[test]
     fn write_with_invalid_lba_range_should_fail() {
         for_each_block_device_type(|device_type| {
@@ -218,6 +224,7 @@ mod tests {
         });
     }
 
+    #[traced_test]
     #[test]
     fn write_should_fail_when_not_enough_buffer_is_provided() {
         for_each_block_device_type(|device_type| {
@@ -240,6 +247,7 @@ mod tests {
         });
     }
 
+    #[traced_test]
     #[test]
     fn read_with_invalid_lba_range_should_fail() {
         for_each_block_device_type(|device_type| {
@@ -259,6 +267,7 @@ mod tests {
         });
     }
 
+    #[traced_test]
     #[test]
     fn reading_unwritten_lbas_should_return_unmap_data() {
         for_each_block_device_type(|device_type| {
@@ -279,6 +288,7 @@ mod tests {
         });
     }
 
+    #[traced_test]
     #[test]
     fn flush_and_load_should_success() {
         for_each_block_device_type(|device_type| {
@@ -336,6 +346,7 @@ mod tests {
         });
     }
 
+    #[traced_test]
     #[test]
     fn device_should_be_able_to_provide_device_info_after_load() {
         for_each_block_device_type(|device_type| {

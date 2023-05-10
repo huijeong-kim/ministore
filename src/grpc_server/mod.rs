@@ -2,6 +2,8 @@ use std::sync::{Arc, Mutex};
 use tonic::transport::Server;
 use tonic::Response;
 
+use uuid::Uuid;
+
 use crate::device_manager::DeviceManager;
 
 use self::ministore_proto::mini_service_server::{MiniService, MiniServiceServer};
@@ -89,6 +91,21 @@ impl MiniService for GrpcServer {
         request: tonic::Request<ReadRequest>,
     ) -> Result<tonic::Response<ReadResponse>, tonic::Status> {
         let request = request.into_inner();
+        let request_id = Uuid::new_v4();
+
+        let request_span = tracing::trace_span!(
+            "Read data",
+            %request_id,
+        );
+        let _request_span_guard = request_span.enter();
+
+        tracing::trace!(
+            "request_id={}, device={}, lba={}, num_blocks={}",
+            request_id,
+            request.name,
+            request.lba,
+            request.num_blocks
+        );
 
         let reply = match self.device_manager.lock().unwrap().read(
             &request.name,
@@ -100,11 +117,14 @@ impl MiniService for GrpcServer {
                 data: Some(data_block_into_proto_data(data)),
                 reason: None,
             },
-            Err(e) => ReadResponse {
-                success: false,
-                data: None,
-                reason: Some(e),
-            },
+            Err(e) => {
+                tracing::error!("{:?}", e);
+                ReadResponse {
+                    success: false,
+                    data: None,
+                    reason: Some(e),
+                }
+            }
         };
 
         Ok(Response::new(reply))
@@ -115,8 +135,20 @@ impl MiniService for GrpcServer {
         request: tonic::Request<WriteRequest>,
     ) -> Result<tonic::Response<WriteResponse>, tonic::Status> {
         let request = request.into_inner();
+        let request_id = Uuid::new_v4();
+
+        let request_span = tracing::trace_span!("Write data", %request_id);
+        let _request_span_guard = request_span.enter();
+        tracing::trace!(
+            "request_id={}, device={}, lba={}, num_blocks={}",
+            request_id,
+            request.name,
+            request.lba,
+            request.num_blocks
+        );
 
         let reply = if is_valid_proto_data(&request.data) == false {
+            tracing::error!("No data provided");
             WriteResponse {
                 success: false,
                 reason: Some("No data provided".to_string()),
@@ -132,10 +164,13 @@ impl MiniService for GrpcServer {
                     success: true,
                     reason: None,
                 },
-                Err(e) => WriteResponse {
-                    success: false,
-                    reason: Some(e),
-                },
+                Err(e) => {
+                    tracing::error!("{:?}", e);
+                    WriteResponse {
+                        success: false,
+                        reason: Some(e),
+                    }
+                }
             }
         };
 
@@ -147,6 +182,19 @@ impl MiniService for GrpcServer {
         request: tonic::Request<CreateFakeDeviceRequest>,
     ) -> Result<tonic::Response<CreateFakeDeviceResponse>, tonic::Status> {
         let request = request.into_inner();
+        let request_id = Uuid::new_v4();
+
+        let request_span = tracing::debug_span!(
+            "Create a new fake device",
+            %request_id
+        );
+        let _request_span_guard = request_span.enter();
+        tracing::debug!(
+            "request_id={}, device={}, size={}",
+            request_id,
+            request.name,
+            request.size
+        );
 
         let reply = match self
             .device_manager
@@ -158,10 +206,13 @@ impl MiniService for GrpcServer {
                 success: true,
                 reason: None,
             },
-            Err(e) => CreateFakeDeviceResponse {
-                success: false,
-                reason: Some(e),
-            },
+            Err(e) => {
+                tracing::error!("{:?}", e);
+                CreateFakeDeviceResponse {
+                    success: false,
+                    reason: Some(e),
+                }
+            }
         };
 
         Ok(Response::new(reply))
@@ -172,6 +223,14 @@ impl MiniService for GrpcServer {
         request: tonic::Request<DeleteFakeDeviceRequest>,
     ) -> Result<tonic::Response<DeleteFakeDeviceResponse>, tonic::Status> {
         let request = request.into_inner();
+        let request_id = Uuid::new_v4();
+
+        let request_span = tracing::debug_span!(
+            "Delete a fake device",
+            %request_id,
+        );
+        let _request_span_guard = request_span.enter();
+        tracing::debug!("request_id={}, device={}", request_id, request.name);
 
         let reply = match self
             .device_manager
@@ -183,10 +242,13 @@ impl MiniService for GrpcServer {
                 success: true,
                 reason: None,
             },
-            Err(e) => DeleteFakeDeviceResponse {
-                success: false,
-                reason: Some(e),
-            },
+            Err(e) => {
+                tracing::error!("{:?}", e);
+                DeleteFakeDeviceResponse {
+                    success: false,
+                    reason: Some(e),
+                }
+            }
         };
 
         Ok(Response::new(reply))
@@ -197,6 +259,14 @@ impl MiniService for GrpcServer {
         request: tonic::Request<ListFakeDevicesRequest>,
     ) -> Result<tonic::Response<ListFakeDevicesResponse>, tonic::Status> {
         let _request = request.into_inner();
+        let request_id = Uuid::new_v4();
+
+        let request_span = tracing::debug_span!(
+            "List fake devices",
+            %request_id,
+        );
+        let _request_span_guard = request_span.enter();
+        tracing::debug!("request_id={}", request_id);
 
         let reply = match self.device_manager.lock().unwrap().list_fake_devices() {
             Ok(list) => ListFakeDevicesResponse {
@@ -210,11 +280,14 @@ impl MiniService for GrpcServer {
                     })
                     .collect(),
             },
-            Err(e) => ListFakeDevicesResponse {
-                success: false,
-                reason: Some(e),
-                device_list: Vec::new(),
-            },
+            Err(e) => {
+                tracing::error!("{:?}", e);
+                ListFakeDevicesResponse {
+                    success: false,
+                    reason: Some(e),
+                    device_list: Vec::new(),
+                }
+            }
         };
 
         Ok(Response::new(reply))
@@ -223,6 +296,8 @@ impl MiniService for GrpcServer {
 
 #[cfg(test)]
 mod tests {
+    use tracing_test::traced_test;
+
     use crate::{
         block_device_common::data_type::BLOCK_SIZE, config::DeviceConfig,
         grpc_server::ministore_proto::mini_service_client::MiniServiceClient,
@@ -242,6 +317,7 @@ mod tests {
 
     /// Be sure to use different port for each test, so that all tests can be executed in parallel.
     #[tokio::test]
+    #[traced_test]
     async fn server_should_response_with_ready_when_started() {
         let addr = "127.0.0.1:8080";
         let addr_for_client = format!("http://{}", addr.clone());
@@ -271,6 +347,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn server_should_be_able_to_create_and_delete_fake_device() {
         let addr = "127.0.0.1:8081";
         let addr_for_client = format!("http://{}", addr.clone());
@@ -342,6 +419,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn server_should_be_able_to_read_write_fake_device() {
         let addr = "127.0.0.1:8082";
         let addr_for_client = format!("http://{}", addr.clone());
@@ -421,7 +499,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn server_should_replay_with_error_when_invalid_data_provided_for_write() {
+    #[traced_test]
+    async fn server_should_reply_with_error_when_invalid_data_provided_for_write() {
         let addr = "127.0.0.1:8083";
         let addr_for_client = format!("http://{}", addr.clone());
 
@@ -439,7 +518,7 @@ mod tests {
 
             // Create device for test
             let request = tonic::Request::new(CreateFakeDeviceRequest {
-                name: "server_should_replay_with_error_when_invalid_data_provided_for_write"
+                name: "server_should_reply_with_error_when_invalid_data_provided_for_write"
                     .to_string(),
                 size: humansize_to_integer("1M").unwrap(),
             });
@@ -452,7 +531,7 @@ mod tests {
 
             // test 1. write request without data
             let invalid_request = tonic::Request::new(WriteRequest {
-                name: "server_should_replay_with_error_when_invalid_data_provided_for_write"
+                name: "server_should_reply_with_error_when_invalid_data_provided_for_write"
                     .to_string(),
                 lba: 0,
                 num_blocks: 1,
@@ -470,7 +549,7 @@ mod tests {
                 data: vec![vec![0xA as u8; 1024]],
             };
             let invalid_request = tonic::Request::new(WriteRequest {
-                name: "server_should_replay_with_error_when_invalid_data_provided_for_write"
+                name: "server_should_reply_with_error_when_invalid_data_provided_for_write"
                     .to_string(),
                 lba: 0,
                 num_blocks: 1,
@@ -485,7 +564,7 @@ mod tests {
 
             // Delete device for wrapup
             let request = tonic::Request::new(DeleteFakeDeviceRequest {
-                name: "server_should_replay_with_error_when_invalid_data_provided_for_write"
+                name: "server_should_reply_with_error_when_invalid_data_provided_for_write"
                     .to_string(),
             });
             let response = client
