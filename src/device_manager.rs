@@ -143,9 +143,9 @@ impl DeviceManager {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::humansize_to_integer;
-
     use super::*;
+    use crate::utils::humansize_to_integer;
+    use tracing_test::traced_test;
 
     fn test_device_config(dirname: &str) -> DeviceConfig {
         DeviceConfig {
@@ -154,6 +154,8 @@ mod tests {
             fake_device_type: "SimpleFake".to_string(),
         }
     }
+
+    #[traced_test]
     #[test]
     fn device_manager_can_create_and_delete_device() {
         let testname = "device_manager_can_create_and_delete_device";
@@ -186,6 +188,7 @@ mod tests {
         std::fs::remove_dir(&testname).expect("Failed to remove directory");
     }
 
+    #[traced_test]
     #[test]
     fn device_manager_cannot_create_device_with_same_name_twice() {
         let testname = "device_manager_cannot_create_device_with_same_name_twice";

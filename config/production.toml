@@ -1,6 +1,3 @@
-[log]
-level = "info"
-
 [devices]
 list = [
     "/dev/nvme0n1",

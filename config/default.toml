@@ -1,9 +1,6 @@
 # Default config file should have all key values 
 # with the default value that can be used for config files that does not define it
 
-[log]
-level = "debug"
-
 [devices]
 use_fake = false
 fake_device_location = "."
