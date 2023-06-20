@@ -1,7 +1,6 @@
 use clap::{Arg, ArgAction, ArgGroup, ArgMatches, Command};
 use dotenv::dotenv;
 use ministore::config::EnvironmentVariables;
-use std::env;
 
 fn main() -> Result<(), String> {
     // Parse arguments
@@ -16,12 +15,21 @@ fn main() -> Result<(), String> {
     // Read envrionment variables
     let environment_variables = get_environment_values();
 
-    println!("run_mode: {:?}", run_mode);
-    println!("config: {:#?}", config_str);
-    println!("environment_variables: {:?}", environment_variables);
-
     // Start ministore
-    ministore::start((config_str.as_str(), environment_variables))?;
+    let start_server = async {
+        ministore::telemetry::init_tracing(environment_variables.log_level.as_str())?;
+        ministore::start((config_str.as_str(), environment_variables)).await?;
+        Ok::<(), String>(())
+    };
+
+    // Run server
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(4)
+        .enable_all()
+        .build()
+        .expect("Failed to setup tokio runtime");
+
+    runtime.block_on(start_server)?;
 
     Ok(())
 }
@@ -55,9 +63,11 @@ pub fn get_environment_values() -> EnvironmentVariables {
 #[cfg(test)]
 mod test {
     use std::io::Write;
+    use tracing_test::traced_test;
 
     use super::*;
 
+    #[traced_test]
     #[test]
     fn ministore_should_run_with_development_mode_when_devel_set_true() {
         let run_mode = get_run_mode(true, None);
@@ -65,6 +75,7 @@ mod test {
         assert_eq!(run_mode, RunMode::Development);
     }
 
+    #[traced_test]
     #[test]
     fn ministore_should_run_with_test_mode_when_test_name_provided() {
         let test_config = "config/production.toml".to_string(); // temporally use exisiting config file name
@@ -73,6 +84,7 @@ mod test {
         assert_eq!(run_mode, RunMode::Test(test_config));
     }
 
+    #[traced_test]
     #[test]
     fn ministore_should_run_with_proper_config_file_for_each_run_mode() {
         // Development mode

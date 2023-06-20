@@ -2,6 +2,8 @@ use std::sync::{Arc, Mutex};
 use tonic::transport::Server;
 use tonic::Response;
 
+use uuid::Uuid;
+
 use crate::device_manager::DeviceManager;
 
 use self::ministore_proto::mini_service_server::{MiniService, MiniServiceServer};
@@ -74,6 +76,8 @@ impl MiniService for GrpcServer {
 
 #[cfg(test)]
 mod tests {
+    use tracing_test::traced_test;
+
     use crate::{
         block_device_common::data_type::BLOCK_SIZE, config::DeviceConfig,
         grpc_server::ministore_proto::mini_service_client::MiniServiceClient,
@@ -93,6 +97,7 @@ mod tests {
 
     /// Be sure to use different port for each test, so that all tests can be executed in parallel.
     #[tokio::test]
+    #[traced_test]
     async fn server_should_response_with_ready_when_started() {
         let addr = "127.0.0.1:8080";
         let addr_for_client = format!("http://{}", addr.clone());
@@ -122,6 +127,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn server_should_be_able_to_create_and_delete_fake_device() {
         let addr = "127.0.0.1:8081";
         let addr_for_client = format!("http://{}", addr.clone());
@@ -193,6 +199,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn server_should_be_able_to_read_write_fake_device() {
         let addr = "127.0.0.1:8082";
         let addr_for_client = format!("http://{}", addr.clone());
@@ -272,7 +279,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn server_should_replay_with_error_when_invalid_data_provided_for_write() {
+    #[traced_test]
+    async fn server_should_reply_with_error_when_invalid_data_provided_for_write() {
         let addr = "127.0.0.1:8083";
         let addr_for_client = format!("http://{}", addr.clone());
 
@@ -290,7 +298,7 @@ mod tests {
 
             // Create device for test
             let request = tonic::Request::new(CreateFakeDeviceRequest {
-                name: "server_should_replay_with_error_when_invalid_data_provided_for_write"
+                name: "server_should_reply_with_error_when_invalid_data_provided_for_write"
                     .to_string(),
                 size: humansize_to_integer("1M").unwrap(),
             });
@@ -303,7 +311,7 @@ mod tests {
 
             // test 1. write request without data
             let invalid_request = tonic::Request::new(WriteRequest {
-                name: "server_should_replay_with_error_when_invalid_data_provided_for_write"
+                name: "server_should_reply_with_error_when_invalid_data_provided_for_write"
                     .to_string(),
                 lba: 0,
                 num_blocks: 1,
@@ -321,7 +329,7 @@ mod tests {
                 data: vec![vec![0xA as u8; 1024]],
             };
             let invalid_request = tonic::Request::new(WriteRequest {
-                name: "server_should_replay_with_error_when_invalid_data_provided_for_write"
+                name: "server_should_reply_with_error_when_invalid_data_provided_for_write"
                     .to_string(),
                 lba: 0,
                 num_blocks: 1,
@@ -336,7 +344,7 @@ mod tests {
 
             // Delete device for wrapup
             let request = tonic::Request::new(DeleteFakeDeviceRequest {
-                name: "server_should_replay_with_error_when_invalid_data_provided_for_write"
+                name: "server_should_reply_with_error_when_invalid_data_provided_for_write"
                     .to_string(),
             });
             let response = client

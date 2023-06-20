@@ -3,13 +3,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct MinistoreConfig {
-    pub log: LogConfig,
     pub devices: DeviceConfig,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct LogConfig {
-    pub level: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -27,4 +21,5 @@ pub fn get_config(config_str: &str) -> Result<MinistoreConfig, String> {
 pub struct EnvironmentVariables {
     pub server_addr: String,
     pub server_port: String,
+    pub log_level: String,
 }

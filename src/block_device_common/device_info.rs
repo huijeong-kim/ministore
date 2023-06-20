@@ -34,7 +34,9 @@ impl DeviceInfo {
 #[cfg(test)]
 mod test {
     use super::*;
+    use tracing_test::traced_test;
 
+    #[traced_test]
     #[test]
     fn create_device_info_should_success() {
         let device_name = "create_device_info";
@@ -64,6 +66,7 @@ mod test {
         );
     }
 
+    #[traced_test]
     #[test]
     fn create_device_info_with_unaligned_size_should_fail() {
         let device_name = "create_device_info";

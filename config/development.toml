@@ -1,6 +1,3 @@
-[log]
-level = "debug"
-
 [devices]
 use_fake = true
 fake_device_location = "fakes"
